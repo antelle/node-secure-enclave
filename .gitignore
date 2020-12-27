@@ -5,7 +5,6 @@ build/
 tmp/
 *.*.*/
 bin/
-conf/test-app.provisionprofile
 *.log
 *.user
 *.iml

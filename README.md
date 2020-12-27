@@ -63,6 +63,8 @@ if (key) {
 
 To test the app, you need a provisioning profile. Generate it on Apple Developer website and save it as `conf/test-app.provisionprofile`.
 
+Once you have your provisioning profile and certificates installed, put your app and team id to `conf/test-app.entitlements.plist`, otherwise it won't build.  
+
 Build everything and run the test app:
 ```sh
 npm start
