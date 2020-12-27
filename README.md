@@ -4,13 +4,15 @@ Secure Enclave module for node.js and Electron.
 
 This module provides support for Secure Enclave operations in Electron apps.
 
-<img src="img/test-app.png" width="601" alt="node-secure-enclave screenshot: test app" />
-
-<img src="img/touch-bar.png" width="549" alt="node-secure-enclave screenshot: touch bar" />
-
 ## Demo
 
 Download a working app here: https://github.com/antelle/node-secure-enclave/releases/latest
+
+That's what you're expected to see:
+
+<img src="img/test-app.png" width="601" alt="node-secure-enclave screenshot: test app" />
+
+<img src="img/touch-bar.png" width="549" alt="node-secure-enclave screenshot: touch bar" />
 
 ## Status
 
