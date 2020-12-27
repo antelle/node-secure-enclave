@@ -10,7 +10,9 @@ That's what you're expected to see:
 
 <img src="img/test-app.png" width="601" alt="node-secure-enclave screenshot: test app" />
 
-<img src="img/touch-bar.png" width="549" alt="node-secure-enclave screenshot: touch bar" />
+And on your touch bar:
+
+<img src="img/touch-bar.png" width="601" alt="node-secure-enclave screenshot: touch bar" />
 
 ## Status
 
