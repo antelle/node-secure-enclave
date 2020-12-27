@@ -44,9 +44,8 @@ if (!SecureEnclave.isSupported) {
 const keyTag = 'your-unique-key-identifier';
 
 const key = SecureEnclave.findKeyPair({ keyTag });
-// you can do something with key.publicKey: Buffer
 if (key) {
-    // key exists
+    // key exists, you can use key.publicKey (Buffer)
     const data = Buffer.from('something');
     // these operations return Buffer too
     data = SecureEnclave.encrypt({ keyTag, data });
