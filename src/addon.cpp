@@ -15,6 +15,23 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
     if (!isBiometricAuthSupported()) {
         return throwNotSupportedError(env);
     }
+    
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    if (!queryAttributes) {
+        return env.Null();
+    }
+
+    auto_release<SecKeyRef> existingPrivateKey = nullptr;
+    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&existingPrivateKey));
+
+    if (existingKeyStatus == errSecSuccess) {
+        auto err = Napi::Error::New(env, "A key with this keyTag already exists, please delete it first");
+        err.Set("exists", Napi::Boolean::New(env, true));
+        err.ThrowAsJavaScriptException();
+        return env.Null();
+    } else if (existingKeyStatus != errSecItemNotFound) {
+        return throwErrorWithCode(env, existingKeyStatus, "SecItemCopyMatching");
+    }
 
     auto_release keyTagData = getKeyTagFromArgs(info);
     if (!keyTagData) {

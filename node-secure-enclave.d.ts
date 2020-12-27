@@ -37,7 +37,7 @@ declare class NodeSecureEnclave {
     static isSupported: boolean;
 
     /**
-     * Creates a new key in the keychain.
+     * Creates a new key in the keychain. If a key with this keyTag already exists, an error is thrown.
      * @param options key creation options
      * @returns created public key
      */
