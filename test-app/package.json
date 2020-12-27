@@ -1,0 +1,9 @@
+{
+  "name": "test-app",
+  "version": "1.0.0",
+  "description": "node-secure-enclave test app",
+  "main": "main.js",
+  "author": "Antelle",
+  "license": "MIT",
+  "private": true
+}

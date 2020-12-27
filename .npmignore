@@ -1,0 +1,8 @@
+*
+!src/*.*
+!README.md
+!LICENSE
+!package.json
+!package-lock.json
+!binding.gyp
+!node-secure-enclave.d.ts

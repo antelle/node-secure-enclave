@@ -1,0 +1,106 @@
+body {
+    --background-color: #ffffff;
+    --text-color: #242424;
+    --button-color: #f3f3f3;
+    --button-color-hover: #e3e3e3;
+    --button-color-active: #2f7cf7;
+    --input-border-color: #42739c;
+    --outline-color: #42729b;
+    --body-padding: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        --background-color: #1e1e1e;
+        --text-color: #fcfcfc;
+        --button-color: #252525;
+        --button-color-hover: #353535;
+        --button-color-active: #2e7cf7;
+        --input-border-color: #81abf3;
+        --outline-color: #90b2f2;
+    }
+}
+
+body {
+    font-family: -apple-system, 'BlinkMacSystemFont', 'Helvetica Neue', 'Helvetica', 'Arial',
+        sans-serif;
+    font-feature-settings: 'liga' 0;
+    font-size: 16px;
+    line-height: 30px;
+    margin: var(--body-padding);
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+a {
+    color: #428ee1;
+}
+a:hover {
+    color: #7094ff;
+}
+a:active {
+    color: #fc4741;
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: var(--button-color);
+    color: var(--text-color);
+    cursor: pointer;
+    outline: none;
+}
+
+button:hover {
+    background: var(--button-color-hover);
+}
+
+button:active {
+    background: var(--button-color-active);
+}
+
+button ~ button {
+    margin-left: 4px;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    padding: var(--body-padding) 0;
+    background: var(--background-color);
+    width: 100%;
+}
+
+#result,
+input {
+    font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+    font-size: 14px;
+}
+
+#result {
+    word-break: break-word;
+}
+#result.error {
+    color: #fc4741;
+}
+
+input {
+    width: 100%;
+    color: var(--text-color);
+    background: var(--background-color);
+    border-radius: 3px;
+    border: 1px solid var(--input-border-color);
+    outline: none;
+    padding: 4px 8px;
+    box-sizing: border-box;
+}
+
+input:focus {
+    box-shadow: 0 0 0 3px var(--outline-color);
+}
+
+.hide {
+    display: none;
+}

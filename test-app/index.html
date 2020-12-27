@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Secure Enclave test app</title>
+        <meta charset="UTF-8" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <h1>Secure Enclave test app</h1>
+        <p>
+            This is a demo of using
+            <a href="https://github.com/antelle/node-secure-enclabe">node-secure-enclave</a>
+            in Electron.
+        </p>
+        <p>
+            <button data-command="create">Create key</button>
+            <button data-command="find">Find key</button>
+            <button data-command="delete">Delete key</button>
+        </p>
+        <p>
+            <button data-command="encrypt">Encrypt data</button>
+            <button data-command="decrypt">Decrypt data</button>
+        </p>
+        <p id="input-area" class="hide">
+            <input id="input-data" placeholder="Enter data here and press Enter" type="text" />
+        </p>
+        <p id="result"></p>
+        <footer>Made with ❤️ by <a href="https://github.com/antelle">Antelle</a></footer>
+    </body>
+</html>
