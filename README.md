@@ -1,6 +1,4 @@
-# node-secure-enclave
-
-Secure Enclave module for node.js and Electron.
+# Secure Enclave module for node.js and Electron
 
 This module provides support for Secure Enclave operations in Electron apps.
 

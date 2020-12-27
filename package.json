@@ -1,5 +1,5 @@
 {
-  "name": "node-secure-enclave",
+  "name": "secure-enclave",
   "version": "0.1.0",
   "description": "Secure Enclave module for node.js and Electron",
   "main": "build/Release/secure_enclave.node",
