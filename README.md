@@ -10,7 +10,7 @@ That's what you're expected to see:
 
 <img src="img/test-app.png" width="601" alt="node-secure-enclave screenshot: test app" />
 
-And on your touch bar:
+And on your Touch Bar:
 
 <img src="img/touch-bar.png" width="601" alt="node-secure-enclave screenshot: touch bar" />
 
@@ -23,12 +23,18 @@ Unstable, not tested yet, I'm actively working on this project, things may break
 - no dependencies, no bloatware
 - ≈50k of native code, no javascript
 - works with Electron
+- hardware encryption, private keys don't leak
 
 ## Requirements
 
+Runtime:
 - macOS: Secure Enclave doesn't exist on other OS
+- limited to MacBooks with Touch Bar
+
+Development:
 - the app must be codesigned
-- provisioning profile must be present
+- provisioning profile, see [below](#library-development)
+- Xcode and command-line tools
 
 ## API
 
@@ -58,6 +64,8 @@ if (key) {
     SecureEnclave.createKeyPair({ keyTag });
 }
 ```
+
+Inspect [the type definition](node-secure-enclave.d.ts) for more details about the API.
 
 ## Library development
 
