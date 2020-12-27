@@ -61,6 +61,8 @@ if (key) {
 
 ## Library development
 
+To test the app, you need a provisioning profile. Generate it on Apple Developer website and save it as `conf/test-app.provisionprofile`.
+
 Build everything and run the test app:
 ```sh
 npm start
