@@ -15,7 +15,7 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
     if (!isBiometricAuthSupported()) {
         return throwNotSupportedError(env);
     }
-    
+
     auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
     if (!queryAttributes) {
         return env.Null();
@@ -61,7 +61,7 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrIsPermanent, kCFBooleanTrue);
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrApplicationTag, keyTagData);
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrLabel, keyTagData);
-    
+
     CFDictionaryAddValue(creteKeyAttributes, kSecPublicKeyAttrs, publicKeyAttrs);
 #else
     auto_release access = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
@@ -69,7 +69,7 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
         kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet,
         nullptr);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrAccessControl, access);
-    
+
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
 #endif
 
@@ -152,7 +152,7 @@ Napi::Value deleteKeyPair(const Napi::CallbackInfo& info) {
     } else if (status != errSecSuccess) {
         return throwErrorWithCode(env, status, "SecItemDelete");
     }
-    
+
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     CFDictionarySetValue(queryAttributes, kSecAttrKeyClass, kSecAttrKeyClassPublic);
     SecItemDelete(queryAttributes);
@@ -172,7 +172,7 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
     if (!queryAttributes) {
         return env.Null();
     }
-    
+
     auto_release decryptedData = getDataFromArgs(info);
     if (!decryptedData) {
         return env.Null();
@@ -192,7 +192,7 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
     }
 
     auto supported = SecKeyIsAlgorithmSupported(publicKey, kSecKeyOperationTypeEncrypt,
-        kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM);
+        kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
         Napi::Error::New(env, "Algorithm not supported").ThrowAsJavaScriptException();
         return env.Null();
@@ -200,7 +200,7 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
 
     CFErrorRef error = nullptr;
     auto_release encryptedData = SecKeyCreateEncryptedData(publicKey,
-        kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM,
+        kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         decryptedData, &error);
     if (error) {
         return throwErrorWithCFError(env, error, "SecKeyCreateEncryptedData");
@@ -220,7 +220,7 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
     if (!queryAttributes) {
         return env.Null();
     }
-    
+
     auto_release encryptedData = getDataFromArgs(info);
     if (!encryptedData) {
         return env.Null();
@@ -234,7 +234,7 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
     }
 
     auto supported = SecKeyIsAlgorithmSupported(privateKey, kSecKeyOperationTypeDecrypt,
-        kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM);
+        kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
         Napi::Error::New(env, "Algorithm not supported").ThrowAsJavaScriptException();
         return env.Null();
@@ -242,7 +242,7 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
 
     CFErrorRef error = nullptr;
     auto_release decryptedData = SecKeyCreateDecryptedData(privateKey,
-        kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM,
+        kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         encryptedData, &error);
     if (error) {
         return throwErrorWithCFError(env, error, "SecKeyCreateDecryptedData");
