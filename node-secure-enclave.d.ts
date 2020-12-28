@@ -1,9 +1,19 @@
 /// <reference types="node" />
 
+declare class KeyOperationArg {
+    /**
+     * Key tag, a unique identifier that tells the Keychain where the key is. Must be globally unique.
+     * The tag data is constructed from a string, using reverse DNS notation, though any unique tag will do.
+     * More about this parameter: https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/generating_new_cryptographic_keys#2863927
+     */
+    keyTag: string;
+}
+
 declare class EncryptDecryptArg {
     /**
      * Key tag, a unique identifier that tells the Keychain where the key is. Must be globally unique.
      * The tag data is constructed from a string, using reverse DNS notation, though any unique tag will do.
+     * More about this parameter: https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/generating_new_cryptographic_keys#2863927
      */
     keyTag: string;
 
@@ -11,14 +21,6 @@ declare class EncryptDecryptArg {
      * Data you want to decrypt or encrypt.
      */
     data: Buffer;
-}
-
-declare class KeyOperationArg {
-    /**
-     * Key tag, a unique identifier that tells the Keychain where the key is. Must be globally unique.
-     * The tag data is constructed from a string, using reverse DNS notation, though any unique tag will do.
-     */
-    keyTag: string;
 }
 
 declare class ResultWithPublicKey {

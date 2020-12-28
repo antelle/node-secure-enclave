@@ -46,7 +46,8 @@ if (!SecureEnclave.isSupported) {
     // Secure Enclave cannot be used on this Mac
 }
 
-const keyTag = 'your-unique-key-identifier';
+// more about this tag: https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/generating_new_cryptographic_keys#2863927
+const keyTag = 'com.your-team.app.this-key';
 
 const key = SecureEnclave.findKeyPair({ keyTag });
 if (key) {
