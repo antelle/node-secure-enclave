@@ -5,7 +5,7 @@ on:
       - master
   pull_request:
 jobs:
-  test:
+  ci:
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -16,7 +16,7 @@ jobs:
         run: npm ci
       - name: Build test module
         run: npm run build-for-testing-node
-      - name: Test
+      - name: Run test
         run: npm test
       - name: Validate typings
-        run: tsc node-secure-enclave.d.ts
+        run: npm run validate-typings

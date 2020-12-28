@@ -17,7 +17,8 @@
     "sign-test-app": "electron-osx-sign tmp/test-app-darwin-x64/test-app.app --entitlements=conf/test-app.entitlements.plist --gatekeeper-assess=false --provisioning-profile=conf/test-app.provisionprofile",
     "test": "mocha",
     "test-app": "tmp/test-app-darwin-x64/test-app.app/Contents/MacOS/test-app",
-    "test-app-unpackaged": "electron test-app"
+    "test-app-unpackaged": "electron test-app",
+    "validate-typings": "tsc node-secure-enclave.d.ts"
   },
   "author": "Antelle",
   "license": "MIT",
@@ -36,6 +37,7 @@
     "mocha": "^8.2.1",
     "node-addon-api": "^3.1.0",
     "node-gyp": "^7.1.2",
-    "prettier": "^2.2.1"
+    "prettier": "^2.2.1",
+    "typescript": "^4.1.3"
   }
 }
