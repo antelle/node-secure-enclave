@@ -1,5 +1,10 @@
 Release notes
 -------------
+##### v0.2.1 (2020-12-28)
+`*` changed the encryption algorithm to ECIESEncryptionCofactorVariableIVX963SHA256AESGCM  
+`+` more detailed API description  
+`+` more details in emitted errors  
+
 ##### v0.2.0 (2020-12-28)
 `*` checking existing keys during creation  
 `+` CI and tests  
