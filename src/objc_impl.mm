@@ -8,6 +8,9 @@ bool isBiometricAuthSupported() {
     }
     LAContext *context = [[LAContext alloc] init];
     supported = [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil];
+#ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
+    supported = true;
+#endif
     [context release];
     checked = true;
     return supported;

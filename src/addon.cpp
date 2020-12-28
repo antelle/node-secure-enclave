@@ -40,11 +40,6 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
 
     auto_release keySize = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &KEY_SIZE_IN_BITS);
 
-    auto_release access = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
-        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet,
-        nullptr);
-
     auto_release creteKeyAttributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
         0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
@@ -53,12 +48,30 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
 
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrIsPermanent, kCFBooleanTrue);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrApplicationTag, keyTagData);
-    CFDictionaryAddValue(privateKeyAttrs, kSecAttrAccessControl, access);
+    CFDictionaryAddValue(privateKeyAttrs, kSecAttrLabel, keyTagData);
 
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrKeySizeInBits, keySize);
-    CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
     CFDictionaryAddValue(creteKeyAttributes, kSecPrivateKeyAttrs, privateKeyAttrs);
+
+#ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
+    auto_release publicKeyAttrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
+        0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+    CFDictionaryAddValue(publicKeyAttrs, kSecAttrIsPermanent, kCFBooleanTrue);
+    CFDictionaryAddValue(publicKeyAttrs, kSecAttrApplicationTag, keyTagData);
+    CFDictionaryAddValue(publicKeyAttrs, kSecAttrLabel, keyTagData);
+    
+    CFDictionaryAddValue(creteKeyAttributes, kSecPublicKeyAttrs, publicKeyAttrs);
+#else
+    auto_release access = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
+        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet,
+        nullptr);
+    CFDictionaryAddValue(privateKeyAttrs, kSecAttrAccessControl, access);
+    
+    CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
+#endif
 
     CFErrorRef error = nullptr;
     auto_release privateKey = SecKeyCreateRandomKey(creteKeyAttributes, &error);
@@ -139,6 +152,11 @@ Napi::Value deleteKeyPair(const Napi::CallbackInfo& info) {
     } else if (status != errSecSuccess) {
         return throwErrorWithCode(env, status, "SecItemDelete");
     }
+    
+#ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
+    CFDictionarySetValue(queryAttributes, kSecAttrKeyClass, kSecAttrKeyClassPublic);
+    SecItemDelete(queryAttributes);
+#endif
 
     return Napi::Boolean::New(env, true);
 }
@@ -154,6 +172,11 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
     if (!queryAttributes) {
         return env.Null();
     }
+    
+    auto_release decryptedData = getDataFromArgs(info);
+    if (!decryptedData) {
+        return env.Null();
+    }
 
     auto_release<SecKeyRef> privateKey = nullptr;
     auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
@@ -165,11 +188,6 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
     auto_release publicKey = SecKeyCopyPublicKey(privateKey);
     if (!publicKey) {
         Napi::Error::New(env, "Can't extract public key").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    auto_release decryptedData = getDataFromArgs(info);
-    if (!decryptedData) {
         return env.Null();
     }
 
@@ -202,17 +220,17 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
     if (!queryAttributes) {
         return env.Null();
     }
+    
+    auto_release encryptedData = getDataFromArgs(info);
+    if (!encryptedData) {
+        return env.Null();
+    }
 
     auto_release<SecKeyRef> privateKey = nullptr;
     auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
 
     if (status != errSecSuccess) {
         return throwErrorWithCode(env, status, "SecItemCopyMatching");
-    }
-
-    auto_release encryptedData = getDataFromArgs(info);
-    if (!encryptedData) {
-        return env.Null();
     }
 
     auto supported = SecKeyIsAlgorithmSupported(privateKey, kSecKeyOperationTypeDecrypt,

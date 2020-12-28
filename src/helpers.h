@@ -12,7 +12,7 @@ Napi::Value throwErrorWithCFError(Napi::Env env, CFErrorRef error, const std::st
 Napi::Value throwNotSupportedError(Napi::Env env);
 
 auto_release<CFDataRef> getKeyTagFromArgs(const Napi::CallbackInfo& info);
-auto_release<CFDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info);
+auto_release<CFMutableDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info);
 auto_release<SecKeyRef> getPrivateKeyFromArgs(const Napi::CallbackInfo& info);
 auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info);
 

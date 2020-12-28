@@ -61,17 +61,18 @@ auto_release<CFDataRef> getKeyTagFromArgs(const Napi::CallbackInfo& info) {
         return nullptr;
     }
     auto keyTag = keyTagProp.As<Napi::String>();
-    if (keyTag.IsEmpty()) {
+    
+    auto keyTagStr = keyTag.Utf8Value();
+    if (keyTagStr.length() == 0) {
         Napi::TypeError::New(env, "keyTag cannot be empty").ThrowAsJavaScriptException();
         return nullptr;
     }
     
-    auto keyTagStr = keyTag.Utf8Value();
     return CFDataCreate(kCFAllocatorDefault,
                           reinterpret_cast<const UInt8*>(keyTagStr.c_str()), keyTagStr.length());
 }
 
-auto_release<CFDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info) {
+auto_release<CFMutableDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info) {
     auto_release keyTagData = getKeyTagFromArgs(info);
     if (!keyTagData) {
         return nullptr;
@@ -85,6 +86,9 @@ auto_release<CFDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::Callback
     CFDictionaryAddValue(queryAttributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
     CFDictionaryAddValue(queryAttributes, kSecAttrApplicationTag, keyTagData);
     CFDictionaryAddValue(queryAttributes, kSecReturnRef, kCFBooleanTrue);
+#ifndef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
+    CFDictionaryAddValue(queryAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
+#endif
     
     return queryAttributes;
 }
@@ -112,7 +116,7 @@ auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info) {
     auto object = info[0].ToObject();
     
     if (!object.Has("data")) {
-        Napi::TypeError::New(env, "data cannot be empty").ThrowAsJavaScriptException();
+        Napi::TypeError::New(env, "data property is missing").ThrowAsJavaScriptException();
         return nullptr;
     }
     
@@ -123,7 +127,7 @@ auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info) {
     }
     
     auto buffer = dataProp.As<Napi::Buffer<UInt8>>();
-    if (buffer.IsEmpty()) {
+    if (buffer.ByteLength() == 0) {
         Napi::TypeError::New(env, "data cannot be empty").ThrowAsJavaScriptException();
         return nullptr;
     }

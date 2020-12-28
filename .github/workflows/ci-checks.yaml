@@ -1,0 +1,22 @@
+name: CI Checks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install npm modules
+        run: npm ci
+      - name: Build test module
+        run: npm run build-for-testing-node
+      - name: Test
+        run: npm test
+      - name: Validate typings
+        run: tsc node-secure-enclave.d.ts

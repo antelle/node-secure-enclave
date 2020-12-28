@@ -22,7 +22,13 @@
         "CLANG_CXX_LIBRARY": "libc++",
         "MACOSX_DEPLOYMENT_TARGET": "10.14",
         "CLANG_CXX_LANGUAGE_STANDARD": "gnu++17"
-      }
+      },
+      "variables": {
+        "NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN%": "0"
+      },
+      "conditions": [
+        ["NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN==1", { "defines": [ "NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN" ] }]
+      ]
     }
   ]
 }

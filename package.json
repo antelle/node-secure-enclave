@@ -8,12 +8,14 @@
     "start": "npm run clean && npm run build-electron && npm run package-test-app && npm run copy-addon-to-test-app && npm run sign-test-app && npm run test-app",
     "build-electron": "electron-rebuild",
     "build-node": "node-gyp configure build",
+    "build-for-testing-node": "node-gyp configure --NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN=1 && node-gyp build",
     "clean": "rm -rf build/Release bin",
     "clean-all": "rm -rf build bin tmp xcode $(node -p \"require('electron/package').version\")",
     "generate-xcode-project": "node-gyp configure -- -f xcode && mkdir -p xcode/node-secure-enclave.xcodeproj && mv build/binding.xcodeproj/project.pbxproj xcode/node-secure-enclave.xcodeproj/project.pbxproj",
     "copy-addon-to-test-app": "mkdir -p tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85 && cp bin/darwin-x64-85/node-secure-enclave.node tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85/node-secure-enclave.node",
     "package-test-app": "electron-packager test-app test-app --overwrite=true --out=tmp --app-bundle-id=net.antelle.node-secure-enclave",
     "sign-test-app": "electron-osx-sign tmp/test-app-darwin-x64/test-app.app --entitlements=conf/test-app.entitlements.plist --gatekeeper-assess=false --provisioning-profile=conf/test-app.provisionprofile",
+    "test": "mocha",
     "test-app": "tmp/test-app-darwin-x64/test-app.app/Contents/MacOS/test-app",
     "test-app-unpackaged": "electron test-app"
   },
@@ -24,16 +26,16 @@
     "type": "git",
     "url": "git://github.com/antelle/node-secure-enclave.git"
   },
-  "dependencies": {
-    "node-addon-api": "^3.1.0",
-    "node-gyp": "^7.1.2"
-  },
   "devDependencies": {
+    "@types/node": "^14.14.16",
     "electron": "^11.1.1",
     "electron-osx-sign": "^0.5.0",
     "electron-packager": "^15.2.0",
     "electron-rebuild": "^2.3.4",
     "eslint": "^7.16.0",
+    "mocha": "^8.2.1",
+    "node-addon-api": "^3.1.0",
+    "node-gyp": "^7.1.2",
     "prettier": "^2.2.1"
   }
 }
