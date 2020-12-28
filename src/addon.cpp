@@ -2,8 +2,16 @@
 #include "helpers.h"
 #include <napi.h>
 #include <Security/Security.h>
+#include <memory>
 
-static const int KEY_SIZE_IN_BITS = 256;
+constexpr int KEY_SIZE_IN_BITS = 256;
+
+struct DecryptArgs {
+    auto_release<CFMutableDictionaryRef> queryAttributes;
+    auto_release<CFDataRef> encryptedData;
+};
+
+static std::unique_ptr<DecryptArgs> lastDecryptArgs;
 
 Napi::Value isSupported(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(info.Env(), isBiometricAuthSupported());
@@ -254,8 +262,26 @@ Napi::Promise decryptData(const Napi::CallbackInfo& info) {
     if (!encryptedData) {
         return deferred.Promise();
     }
+    
+    auto_release touchIdPrompt = getTouchIdPromptFromArgs(info, deferred);
+    if (!touchIdPrompt) {
+        return deferred.Promise();
+    }
+    
+    promptTouchId(touchIdPrompt, queryAttributes);
+    
+    lastDecryptArgs = std::unique_ptr<DecryptArgs>(new DecryptArgs {
+        std::move(queryAttributes),
+        std::move(encryptedData)
+    });
+    
+    return deferred.Promise();
+}
 
-    auto_release<SecKeyRef> privateKey = nullptr;
+void resumeDecryptAfterTouchId(bool success, long errorCode) {
+    
+    lastDecryptArgs.reset();
+    /*auto_release<SecKeyRef> privateKey = nullptr;
     auto status = SecItemCopyMatching(queryAttributes,
         reinterpret_cast<CFTypeRef*>(&privateKey));
 
@@ -289,7 +315,7 @@ Napi::Promise decryptData(const Napi::CallbackInfo& info) {
     }
 
     deferred.Resolve(cfDataToBuffer(env, decryptedData));
-    return deferred.Promise();
+    return deferred.Promise();*/
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {

@@ -1,5 +1,7 @@
 #include <LocalAuthentication/LocalAuthentication.h>
 
+void resumeDecryptAfterTouchId(bool success, long errorCode);
+
 bool isBiometricAuthSupported() {
     static bool checked = false;
     static bool supported = false;
@@ -16,17 +18,14 @@ bool isBiometricAuthSupported() {
     return supported;
 }
 
-void promptTouchID() {
+void promptTouchId(CFStringRef touchIdPrompt, CFMutableDictionaryRef queryAttributes) {
     LAContext* context = [[LAContext alloc] init];
+    CFDictionaryAddValue(queryAttributes, kSecUseAuthenticationContext, context);
     [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-            localizedReason:@"suck my sick"
-                      reply:^(BOOL success, NSError * _Nullable error) {
+            localizedReason:(NSString*)touchIdPrompt
+                      reply:^(BOOL success, NSError* _Nullable error) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (success) {
-                NSLog(@"Dick");
-            } else {
-                NSLog(@"Damn");
-            }
+            resumeDecryptAfterTouchId(success, error ? error.code : 0);
         });
     }];
     [context release];

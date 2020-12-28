@@ -40,7 +40,8 @@ ipcMain.handle('cmd', async (e, command, data) => {
                     return 'Empty data';
                 }
                 data = Buffer.from(data, 'hex');
-                const decrypted = await secureEnclave.decrypt({ keyTag, data });
+                const touchIdPrompt = 'decrypt data';
+                const decrypted = await secureEnclave.decrypt({ keyTag, data, touchIdPrompt });
                 return decrypted.toString('utf8');
             }
             default:

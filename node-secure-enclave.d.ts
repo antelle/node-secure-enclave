@@ -9,18 +9,26 @@ declare class KeyOperationArg {
     keyTag: string;
 }
 
-declare class EncryptDecryptArg {
+declare class EncryptArg extends KeyOperationArg {
     /**
-     * Key tag, a unique identifier that tells the Keychain where the key is. Must be globally unique.
-     * The tag data is constructed from a string, using reverse DNS notation, though any unique tag will do.
-     * More about this parameter: https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/generating_new_cryptographic_keys#2863927
-     */
-    keyTag: string;
-
-    /**
-     * Data you want to decrypt or encrypt.
+     * Data you want to encrypt, no padding needed.
      */
     data: Buffer;
+}
+
+declare class DecryptArg extends KeyOperationArg {
+    /**
+     * Data you want to decrypt.
+     */
+    data: Buffer;
+
+    /**
+     * Localized text that will be shown during biometric authentication, it will be presented in two forms:
+     *  - on the Touch Bar: "Touch ID to {touchIdPrompt}"
+     *  - in the modal dialog: "{app} is trying to {touchIdPrompt}"
+     *  For example, it can be: "decrypt data", "open file"
+     */
+    touchIdPrompt: string;
 }
 
 declare class ResultWithPublicKey {
@@ -68,7 +76,7 @@ declare class NodeSecureEnclave {
      * @param options
      * @returns encrypted data
      */
-    static encrypt(options: EncryptDecryptArg): Promise<Buffer>;
+    static encrypt(options: EncryptArg): Promise<Buffer>;
 
     /**
      * Decrypts data on Secure Enclave with a key identified by keyTag
@@ -85,7 +93,7 @@ declare class NodeSecureEnclave {
      * @param options
      * @returns decrypted data
      */
-    static decrypt(options: EncryptDecryptArg): Promise<Buffer>;
+    static decrypt(options: DecryptArg): Promise<Buffer>;
 }
 
 export = NodeSecureEnclave;
