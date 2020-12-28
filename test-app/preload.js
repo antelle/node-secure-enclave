@@ -36,7 +36,7 @@ window.addEventListener('DOMContentLoaded', () => {
         let result;
         try {
             result = await ipcRenderer.invoke('cmd', command, data);
-            if (command === 'encrypt') {
+            if (command === 'encrypt' && !result.startsWith('error')) {
                 lastEncryptedData = result;
             }
         } catch (e) {

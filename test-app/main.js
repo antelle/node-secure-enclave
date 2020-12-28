@@ -5,11 +5,11 @@ const secureEnclaveNativeModulePath = path.join(
     __dirname,
     '../bin/darwin-x64-85/node-secure-enclave.node'
 );
-const secureEnclave = require(secureEnclaveNativeModulePath);
 const keyTag = 'net.antelle.node-secure-enclave.my-key';
 
 ipcMain.handle('cmd', async (e, command, data) => {
     try {
+        const secureEnclave = require(secureEnclaveNativeModulePath);
         switch (command) {
             case 'create': {
                 const { publicKey } = secureEnclave.createKeyPair({ keyTag });
@@ -49,6 +49,10 @@ ipcMain.handle('cmd', async (e, command, data) => {
     } catch (e) {
         return e.toString();
     }
+
+    function publicKeyToStr(keyData) {
+        return keyData.toString('hex').substr(0, 24) + '...';
+    }
 });
 
 function createWindow() {
@@ -66,10 +70,6 @@ function createWindow() {
     });
 
     win.loadFile('index.html');
-}
-
-function publicKeyToStr(keyData) {
-    return keyData.toString('hex').substr(0, 24) + '...';
 }
 
 app.whenReady().then(createWindow);
