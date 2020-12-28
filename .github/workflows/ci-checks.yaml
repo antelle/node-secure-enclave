@@ -14,8 +14,6 @@ jobs:
           fetch-depth: 0
       - name: Install npm modules
         run: npm ci
-      - name: Check support
-        run: node -p "require('.').isSupported"
       - name: Build test module
         run: npm run build-for-testing-node
       - name: Run test
