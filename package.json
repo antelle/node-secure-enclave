@@ -15,7 +15,7 @@
     "copy-addon-to-test-app": "mkdir -p tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85 && cp bin/darwin-x64-85/node-secure-enclave.node tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85/node-secure-enclave.node",
     "package-test-app": "electron-packager test-app test-app --overwrite=true --out=tmp --app-bundle-id=net.antelle.node-secure-enclave",
     "sign-test-app": "electron-osx-sign tmp/test-app-darwin-x64/test-app.app --entitlements=conf/test-app.entitlements.plist --gatekeeper-assess=false --provisioning-profile=conf/test-app.provisionprofile",
-    "test": "mocha",
+    "test": "npm run build-for-testing-node && mocha",
     "test-app": "tmp/test-app-darwin-x64/test-app.app/Contents/MacOS/test-app",
     "test-app-unpackaged": "electron test-app",
     "validate-typings": "tsc node-secure-enclave.d.ts"

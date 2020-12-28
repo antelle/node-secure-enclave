@@ -3,7 +3,9 @@ const assert = require('assert');
 const keyTag = 'net.antelle.node-secure-enclave.unit-tests.key';
 const keyTagAnother = 'net.antelle.node-secure-enclave.unit-tests.another-key';
 
-describe('node-secure-enclave', () => {
+describe('node-secure-enclave', function () {
+    this.timeout(10000);
+
     afterEach(() => {
         nodeSecureEnclave().deleteKeyPair({ keyTag });
         nodeSecureEnclave().deleteKeyPair({ keyTag: keyTagAnother });
