@@ -5,15 +5,21 @@
 #include <Security/Security.h>
 #include <string>
 
-extern bool isBiometricAuthSupported();
+bool isBiometricAuthSupported();
+void promptTouchID();
 
-Napi::Value throwErrorWithCode(Napi::Env env, long code, const std::string& op);
-Napi::Value throwErrorWithCFError(Napi::Env env, CFErrorRef error, const std::string& op);
-Napi::Value throwNotSupportedError(Napi::Env env);
+void rejectAsTypeError(Napi::Promise::Deferred& deferred, const std::string& message);
+void rejectWithMessage(Napi::Promise::Deferred& deferred, const std::string& message);
+void rejectWithMessageAndProp(Napi::Promise::Deferred& deferred,
+                              const std::string& message, const std::string& prop);
+void rejectWithErrorCode(Napi::Promise::Deferred& deferred, long code, const std::string& op);
+void rejectWithCFError(Napi::Promise::Deferred& deferred, CFErrorRef error, const std::string& op);
+bool rejectIfNotSupported(Napi::Promise::Deferred& deferred);
 
-auto_release<CFDataRef> getKeyTagFromArgs(const Napi::CallbackInfo& info);
-auto_release<CFMutableDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info);
-auto_release<SecKeyRef> getPrivateKeyFromArgs(const Napi::CallbackInfo& info);
-auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info);
+auto_release<CFDataRef> getKeyTagFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred);
+auto_release<CFMutableDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info,
+                                                                   Napi::Promise::Deferred& deferred);
+auto_release<SecKeyRef> getPrivateKeyFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred);
+auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred);
 
 Napi::Buffer<UInt8> cfDataToBuffer(Napi::Env env, CFDataRef cfData);

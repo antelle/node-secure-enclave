@@ -12,11 +12,11 @@ ipcMain.handle('cmd', async (e, command, data) => {
         const secureEnclave = require(secureEnclaveNativeModulePath);
         switch (command) {
             case 'create': {
-                const { publicKey } = secureEnclave.createKeyPair({ keyTag });
+                const { publicKey } = await secureEnclave.createKeyPair({ keyTag });
                 return `Created, public key: ${publicKeyToStr(publicKey)}`;
             }
             case 'find': {
-                const result = secureEnclave.findKeyPair({ keyTag });
+                const result = await secureEnclave.findKeyPair({ keyTag });
                 if (!result) {
                     return 'Key not found';
                 }
@@ -24,7 +24,7 @@ ipcMain.handle('cmd', async (e, command, data) => {
                 return `Found, public key: ${publicKeyToStr(publicKey)}`;
             }
             case 'delete': {
-                const deleted = secureEnclave.deleteKeyPair({ keyTag });
+                const deleted = await secureEnclave.deleteKeyPair({ keyTag });
                 return deleted ? 'Deleted' : 'No key to delete';
             }
             case 'encrypt': {
@@ -32,7 +32,7 @@ ipcMain.handle('cmd', async (e, command, data) => {
                     return 'Empty data';
                 }
                 data = Buffer.from(data, 'utf8');
-                const encrypted = secureEnclave.encrypt({ keyTag, data });
+                const encrypted = await secureEnclave.encrypt({ keyTag, data });
                 return encrypted.toString('hex');
             }
             case 'decrypt': {
@@ -40,7 +40,7 @@ ipcMain.handle('cmd', async (e, command, data) => {
                     return 'Empty data';
                 }
                 data = Buffer.from(data, 'hex');
-                const decrypted = secureEnclave.decrypt({ keyTag, data });
+                const decrypted = await secureEnclave.decrypt({ keyTag, data });
                 return decrypted.toString('utf8');
             }
             default:

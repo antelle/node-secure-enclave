@@ -6,9 +6,9 @@ const keyTagAnother = 'net.antelle.node-secure-enclave.unit-tests.another-key';
 describe('node-secure-enclave', function () {
     this.timeout(10000);
 
-    afterEach(() => {
-        nodeSecureEnclave().deleteKeyPair({ keyTag });
-        nodeSecureEnclave().deleteKeyPair({ keyTag: keyTagAnother });
+    afterEach(async () => {
+        await nodeSecureEnclave().deleteKeyPair({ keyTag });
+        await nodeSecureEnclave().deleteKeyPair({ keyTag: keyTagAnother });
     });
 
     it('loads the library', () => {
@@ -21,19 +21,19 @@ describe('node-secure-enclave', function () {
         });
     });
 
-    describe('createKeyPair', () => {
+    describe('createKeyPair', async () => {
         testCommonMethodBehavior('createKeyPair');
 
-        it('creates a new key pair', () => {
-            const key = nodeSecureEnclave().createKeyPair({ keyTag });
+        it('creates a new key pair', async () => {
+            const key = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(key?.publicKey instanceof Buffer);
         });
 
-        it('creates two key pairs', () => {
-            const key = nodeSecureEnclave().createKeyPair({ keyTag });
+        it('creates two key pairs', async () => {
+            const key = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(key?.publicKey instanceof Buffer);
 
-            const keyAnother = nodeSecureEnclave().createKeyPair({ keyTag: keyTagAnother });
+            const keyAnother = await nodeSecureEnclave().createKeyPair({ keyTag: keyTagAnother });
             assert.ok(keyAnother?.publicKey instanceof Buffer);
 
             assert.notStrictEqual(
@@ -42,17 +42,19 @@ describe('node-secure-enclave', function () {
             );
         });
 
-        it('throws an error when key already exists', () => {
-            const key = nodeSecureEnclave().createKeyPair({ keyTag });
+        it('throws an error when key already exists', async () => {
+            const key = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(key?.publicKey instanceof Buffer);
 
-            assert.throws(
-                () => nodeSecureEnclave().createKeyPair({ keyTag }),
+            await assert.rejects(
+                async () => {
+                    await nodeSecureEnclave().createKeyPair({ keyTag });
+                },
                 (e) => {
                     return (
                         e.message ===
                             'A key with this keyTag already exists, please delete it first' &&
-                        e.exists === true
+                        e.keyExists === true
                     );
                 }
             );
@@ -62,21 +64,21 @@ describe('node-secure-enclave', function () {
     describe('deleteKeyPair', () => {
         testCommonMethodBehavior('deleteKeyPair');
 
-        it('deletes a key pair', () => {
-            const key = nodeSecureEnclave().createKeyPair({ keyTag });
+        it('deletes a key pair', async () => {
+            const key = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(key?.publicKey instanceof Buffer);
 
-            const deleted = nodeSecureEnclave().deleteKeyPair({ keyTag });
+            const deleted = await nodeSecureEnclave().deleteKeyPair({ keyTag });
             assert.strictEqual(deleted, true);
 
-            const newKey = nodeSecureEnclave().createKeyPair({ keyTag });
+            const newKey = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(newKey?.publicKey instanceof Buffer);
 
             assert.notStrictEqual(newKey.publicKey.toString('hex'), key.publicKey.toString('hex'));
         });
 
-        it('throws an error for a non-existing key', () => {
-            const deleted = nodeSecureEnclave().deleteKeyPair({ keyTag });
+        it('throws an error for a non-existing key', async () => {
+            const deleted = await nodeSecureEnclave().deleteKeyPair({ keyTag });
             assert.strictEqual(deleted, false);
         });
     });
@@ -84,18 +86,18 @@ describe('node-secure-enclave', function () {
     describe('findKeyPair', () => {
         testCommonMethodBehavior('findKeyPair');
 
-        it('finds an existing key', () => {
-            const key = nodeSecureEnclave().createKeyPair({ keyTag });
+        it('finds an existing key', async () => {
+            const key = await nodeSecureEnclave().createKeyPair({ keyTag });
             assert.ok(key?.publicKey instanceof Buffer);
 
-            const found = nodeSecureEnclave().findKeyPair({ keyTag });
+            const found = await nodeSecureEnclave().findKeyPair({ keyTag });
             assert.ok(found?.publicKey instanceof Buffer);
 
             assert.strictEqual(found.publicKey.toString('hex'), key.publicKey.toString('hex'));
         });
 
-        it('returns null for a non-existing key', () => {
-            const found = nodeSecureEnclave().findKeyPair({ keyTag });
+        it('returns null for a non-existing key', async () => {
+            const found = await nodeSecureEnclave().findKeyPair({ keyTag });
             assert.strictEqual(found, null);
         });
     });
@@ -104,29 +106,28 @@ describe('node-secure-enclave', function () {
         testDataMethodBehavior('encrypt');
         testDataMethodBehavior('decrypt');
 
-        it('encrypts and decrypts data', () => {
+        it('encrypts and decrypts data', async () => {
             const data = Buffer.from('Hello, world!');
 
-            nodeSecureEnclave().createKeyPair({ keyTag });
+            await nodeSecureEnclave().createKeyPair({ keyTag });
 
-            const encrypted = nodeSecureEnclave().encrypt({ keyTag, data });
+            const encrypted = await nodeSecureEnclave().encrypt({ keyTag, data });
             assert.strictEqual(encrypted instanceof Buffer, true);
             assert.notStrictEqual(encrypted.toString('hex'), data.toString('hex'));
 
-            const decrypted = nodeSecureEnclave().decrypt({ keyTag, data: encrypted });
+            const decrypted = await nodeSecureEnclave().decrypt({ keyTag, data: encrypted });
             assert.strictEqual(decrypted instanceof Buffer, true);
             assert.strictEqual(decrypted.toString('hex'), data.toString('hex'));
         });
 
-        it('throws an error for bad data', () => {
+        it('throws an error for bad data', async () => {
             const data = Buffer.from('broken');
 
-            nodeSecureEnclave().createKeyPair({ keyTag });
+            await nodeSecureEnclave().createKeyPair({ keyTag });
 
-            assert.throws(
-                () => nodeSecureEnclave().decrypt({ keyTag, data }),
-                /SecKeyCreateDecryptedData/
-            );
+            await assert.rejects(async () => {
+                await nodeSecureEnclave().decrypt({ keyTag, data });
+            }, /SecKeyCreateDecryptedData/);
         });
     });
 
@@ -141,24 +142,39 @@ describe('node-secure-enclave', function () {
             assert.strictEqual(typeof method, 'function');
         });
 
-        it('throws on empty args', () => {
-            assert.throws(() => method(), /TypeError: Expected exactly one argument/);
+        it('throws on empty args', async () => {
+            await assert.rejects(
+                async () => await method(),
+                /TypeError: Expected exactly one argument/
+            );
         });
 
-        it('throws on bad arg type', () => {
-            assert.throws(() => method('test'), /TypeError: options is not an object/);
+        it('throws on bad arg type', async () => {
+            await assert.rejects(
+                async () => await method('test'),
+                /TypeError: options is not an object/
+            );
         });
 
-        it('throws on missing keyTag', () => {
-            assert.throws(() => method({}), /TypeError: keyTag property is missing/);
+        it('throws on missing keyTag', async () => {
+            await assert.rejects(
+                async () => await method({}),
+                /TypeError: keyTag property is missing/
+            );
         });
 
-        it('throws on bad keyTag type', () => {
-            assert.throws(() => method({ keyTag: 1 }), /TypeError: keyTag is not a string/);
+        it('throws on bad keyTag type', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag: 1 }),
+                /TypeError: keyTag is not a string/
+            );
         });
 
-        it('throws on empty keyTag', () => {
-            assert.throws(() => method({ keyTag: '' }), /TypeError: keyTag cannot be empty/);
+        it('throws on empty keyTag', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag: '' }),
+                /TypeError: keyTag cannot be empty/
+            );
         });
     }
 
@@ -167,27 +183,30 @@ describe('node-secure-enclave', function () {
 
         const method = nodeSecureEnclave()[methodName];
 
-        it('throws on missing data', () => {
-            assert.throws(() => method({ keyTag }), /TypeError: data property is missing/);
+        it('throws on missing data', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag }),
+                /TypeError: data property is missing/
+            );
         });
 
-        it('throws on bad data type', () => {
-            assert.throws(
-                () => method({ keyTag, data: 'test' }),
+        it('throws on bad data type', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag, data: 'test' }),
                 /TypeError: data is not a buffer/
             );
         });
 
-        it('throws on empty data', () => {
-            assert.throws(
-                () => method({ keyTag, data: Buffer.alloc(0) }),
+        it('throws on empty data', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag, data: Buffer.alloc(0) }),
                 /TypeError: data cannot be empty/
             );
         });
 
-        it('throws on a non-existing key', () => {
-            assert.throws(
-                () => method({ keyTag, data: Buffer.from('data') }),
+        it('throws on a non-existing key', async () => {
+            await assert.rejects(
+                async () => await method({ keyTag, data: Buffer.from('data') }),
                 (e) => {
                     return (
                         e.message === 'Key not found in Secure Enclave' && e.keyNotFound === true

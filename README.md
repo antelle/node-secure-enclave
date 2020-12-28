@@ -49,19 +49,19 @@ if (!SecureEnclave.isSupported) {
 // more about this tag: https://developer.apple.com/documentation/security/certificate_key_and_trust_services/keys/generating_new_cryptographic_keys#2863927
 const keyTag = 'com.your-team.app.this-key';
 
-const key = SecureEnclave.findKeyPair({ keyTag });
+const key = await SecureEnclave.findKeyPair({ keyTag });
 if (key) {
     // key exists, you can use key.publicKey (Buffer)
     const data = Buffer.from('something');
     // these operations return Buffer too
-    data = SecureEnclave.encrypt({ keyTag, data });
-    data = SecureEnclave.decrypt({ keyTag, data });
+    data = await SecureEnclave.encrypt({ keyTag, data });
+    data = await SecureEnclave.decrypt({ keyTag, data });
     
     // if you don't need the key anymore
-    SecureEnclave.deleteKeyPair({ keyTag });
+    await SecureEnclave.deleteKeyPair({ keyTag });
 } else {
     // key doesn't exist yet
-    SecureEnclave.createKeyPair({ keyTag });
+    await SecureEnclave.createKeyPair({ keyTag });
 }
 ```
 

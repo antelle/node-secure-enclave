@@ -1,5 +1,8 @@
 Release notes
 -------------
+##### v0.3.0 (2020-12-28)
+`*` Promise API  
+
 ##### v0.2.1 (2020-12-28)
 `*` changed the encryption algorithm to ECIESEncryptionCofactorVariableIVX963SHA256AESGCM  
 `+` more detailed API description  

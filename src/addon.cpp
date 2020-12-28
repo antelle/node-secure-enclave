@@ -9,16 +9,18 @@ Napi::Value isSupported(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(info.Env(), isBiometricAuthSupported());
 }
 
-Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
     auto env = info.Env();
+    
+    auto deferred = Napi::Promise::Deferred::New(env);
 
-    if (!isBiometricAuthSupported()) {
-        return throwNotSupportedError(env);
+    if (rejectIfNotSupported(deferred)) {
+        return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto_release<SecKeyRef> existingPrivateKey = nullptr;
@@ -26,17 +28,18 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
         reinterpret_cast<CFTypeRef*>(&existingPrivateKey));
 
     if (existingKeyStatus == errSecSuccess) {
-        auto err = Napi::Error::New(env, "A key with this keyTag already exists, please delete it first");
-        err.Set("exists", Napi::Boolean::New(env, true));
-        err.ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessageAndProp(deferred,
+                                 "A key with this keyTag already exists, please delete it first",
+                                 "keyExists");
+        return deferred.Promise();
     } else if (existingKeyStatus != errSecItemNotFound) {
-        return throwErrorWithCode(env, existingKeyStatus, "SecItemCopyMatching");
+        rejectWithErrorCode(deferred, existingKeyStatus, "SecItemCopyMatching");
+        return deferred.Promise();
     }
 
-    auto_release keyTagData = getKeyTagFromArgs(info);
+    auto_release keyTagData = getKeyTagFromArgs(info, deferred);
     if (!keyTagData) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto_release keySize = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &KEY_SIZE_IN_BITS);
@@ -77,35 +80,41 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
     CFErrorRef error = nullptr;
     auto_release privateKey = SecKeyCreateRandomKey(creteKeyAttributes, &error);
     if (!privateKey) {
-        return throwErrorWithCFError(env, error, "SecKeyCreateRandomKey");
+        rejectWithCFError(deferred, error, "SecKeyCreateRandomKey");
+        return deferred.Promise();
     }
 
     auto_release publicKey = SecKeyCopyPublicKey(privateKey);
     if (!publicKey) {
-        Napi::Error::New(env, "Can't extract public key").ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessage(deferred, "Can't extract public key");
+        return deferred.Promise();
     }
 
     auto_release publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error);
     if (!publicKeyData) {
-        return throwErrorWithCFError(env, error, "SecKeyCopyExternalRepresentation");
+        rejectWithCFError(deferred, error, "SecKeyCopyExternalRepresentation");
+        return deferred.Promise();
     }
 
     auto ret = Napi::Object::New(env);
     ret.Set("publicKey", cfDataToBuffer(env, publicKeyData));
-    return ret;
+    
+    deferred.Resolve(ret);
+    return deferred.Promise();
 }
 
-Napi::Value findKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
+    
+    auto deferred = Napi::Promise::Deferred::New(env);
 
-    if (!isBiometricAuthSupported()) {
-        return throwNotSupportedError(env);
+    if (rejectIfNotSupported(deferred)) {
+        return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
@@ -113,46 +122,55 @@ Napi::Value findKeyPair(const Napi::CallbackInfo& info) {
         reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status == errSecItemNotFound) {
-        return env.Null();
+        deferred.Resolve(env.Null());
+        return deferred.Promise();
     } else if (status != errSecSuccess) {
-        return throwErrorWithCode(env, status, "SecItemCopyMatching");
+        rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
+        return deferred.Promise();
     }
 
     auto_release publicKey = SecKeyCopyPublicKey(privateKey);
     if (!publicKey) {
-        Napi::Error::New(env, "Can't extract public key").ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessage(deferred, "Can't extract public key");
+        return deferred.Promise();
     }
 
     CFErrorRef error = nullptr;
     auto_release publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error);
     if (!publicKeyData) {
-        return throwErrorWithCFError(env, error, "SecKeyCopyExternalRepresentation");
+        rejectWithCFError(deferred, error, "SecKeyCopyExternalRepresentation");
+        return deferred.Promise();
     }
 
     auto ret = Napi::Object::New(env);
     ret.Set("publicKey", cfDataToBuffer(env, publicKeyData));
-    return ret;
+    
+    deferred.Resolve(ret);
+    return deferred.Promise();
 }
 
-Napi::Value deleteKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise deleteKeyPair(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if (!isBiometricAuthSupported()) {
-        return throwNotSupportedError(env);
+    auto deferred = Napi::Promise::Deferred::New(env);
+
+    if (rejectIfNotSupported(deferred)) {
+        return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto status = SecItemDelete(queryAttributes);
 
     if (status == errSecItemNotFound) {
-        return Napi::Boolean::New(env, false);
+        deferred.Resolve(Napi::Boolean::New(env, false));
+        return deferred.Promise();
     } else if (status != errSecSuccess) {
-        return throwErrorWithCode(env, status, "SecItemDelete");
+        rejectWithErrorCode(deferred, status, "SecItemDelete");
+        return deferred.Promise();
     }
 
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
@@ -160,24 +178,27 @@ Napi::Value deleteKeyPair(const Napi::CallbackInfo& info) {
     SecItemDelete(queryAttributes);
 #endif
 
-    return Napi::Boolean::New(env, true);
+    deferred.Resolve(Napi::Boolean::New(env, true));
+    return deferred.Promise();
 }
 
-Napi::Value encryptData(const Napi::CallbackInfo& info) {
+Napi::Promise encryptData(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if (!isBiometricAuthSupported()) {
-        return throwNotSupportedError(env);
+    auto deferred = Napi::Promise::Deferred::New(env);
+
+    if (rejectIfNotSupported(deferred)) {
+        return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
-        return env.Null();
+        return deferred.Promise();
     }
 
-    auto_release decryptedData = getDataFromArgs(info);
+    auto_release decryptedData = getDataFromArgs(info, deferred);
     if (!decryptedData) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
@@ -185,20 +206,21 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
         reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status != errSecSuccess) {
-        return throwErrorWithCode(env, status, "SecItemCopyMatching");
+        rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
+        return deferred.Promise();
     }
 
     auto_release publicKey = SecKeyCopyPublicKey(privateKey);
     if (!publicKey) {
-        Napi::Error::New(env, "Can't extract public key").ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessage(deferred, "Can't extract public key");
+        return deferred.Promise();
     }
 
     auto supported = SecKeyIsAlgorithmSupported(publicKey, kSecKeyOperationTypeEncrypt,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
-        Napi::Error::New(env, "Algorithm not supported").ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessage(deferred, "Algorithm not supported");
+        return deferred.Promise();
     }
 
     CFErrorRef error = nullptr;
@@ -206,27 +228,31 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         decryptedData, &error);
     if (error) {
-        return throwErrorWithCFError(env, error, "SecKeyCreateEncryptedData");
+        rejectWithCFError(deferred, error, "SecKeyCreateEncryptedData");
+        return deferred.Promise();
     }
 
-    return cfDataToBuffer(env, encryptedData);
+    deferred.Resolve(cfDataToBuffer(env, encryptedData));
+    return deferred.Promise();
 }
 
-Napi::Value decryptData(const Napi::CallbackInfo& info) {
+Napi::Promise decryptData(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
 
-    if (!isBiometricAuthSupported()) {
-        return throwNotSupportedError(env);
+    auto deferred = Napi::Promise::Deferred::New(env);
+
+    if (rejectIfNotSupported(deferred)) {
+        return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info);
+    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
-        return env.Null();
+        return deferred.Promise();
     }
 
-    auto_release encryptedData = getDataFromArgs(info);
+    auto_release encryptedData = getDataFromArgs(info, deferred);
     if (!encryptedData) {
-        return env.Null();
+        return deferred.Promise();
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
@@ -234,14 +260,15 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
         reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status != errSecSuccess) {
-        return throwErrorWithCode(env, status, "SecItemCopyMatching");
+        rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
+        return deferred.Promise();
     }
 
     auto supported = SecKeyIsAlgorithmSupported(privateKey, kSecKeyOperationTypeDecrypt,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
-        Napi::Error::New(env, "Algorithm not supported").ThrowAsJavaScriptException();
-        return env.Null();
+        rejectWithMessage(deferred, "Algorithm not supported");
+        return deferred.Promise();
     }
 
     CFErrorRef error = nullptr;
@@ -254,13 +281,15 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
             auto err = Napi::Error::New(env, "User refused to authenticate with Touch ID");
             err.Set("rejected", Napi::Boolean::New(env, true));
             err.Set("code", Napi::Number::New(env, code));
-            err.ThrowAsJavaScriptException();
-            return env.Null();
+            deferred.Reject(err.Value());
+            return deferred.Promise();
         }
-        return throwErrorWithCFError(env, error, "SecKeyCreateDecryptedData");
+        rejectWithCFError(deferred, error, "SecKeyCreateDecryptedData");
+        return deferred.Promise();
     }
 
-    return cfDataToBuffer(env, decryptedData);
+    deferred.Resolve(cfDataToBuffer(env, decryptedData));
+    return deferred.Promise();
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {

@@ -43,21 +43,21 @@ declare class NodeSecureEnclave {
      * @param options key creation options
      * @returns created public key
      */
-    static createKeyPair(options: KeyOperationArg): ResultWithPublicKey;
+    static createKeyPair(options: KeyOperationArg): Promise<ResultWithPublicKey>;
 
     /**
      * Finds an existing key based on key tag.
      * @param options key tag
      * @returns object with publicKey, or null, if the key is not found
      */
-    static findKeyPair(options: KeyOperationArg): ResultWithPublicKey | null;
+    static findKeyPair(options: KeyOperationArg): Promise<ResultWithPublicKey | null>;
 
     /**
      * Deletes a key from Keychain and Secure Enclave.
      * @param options key tag
      * @returns true if the key was deleted, false if it's not found, otherwise throws an error
      */
-    static deleteKeyPair(options: KeyOperationArg): boolean;
+    static deleteKeyPair(options: KeyOperationArg): Promise<boolean>;
 
     /**
      * Encrypts data on Secure Enclave with a key identified by keyTag
@@ -68,7 +68,7 @@ declare class NodeSecureEnclave {
      * @param options
      * @returns encrypted data
      */
-    static encrypt(options: EncryptDecryptArg): Buffer;
+    static encrypt(options: EncryptDecryptArg): Promise<Buffer>;
 
     /**
      * Decrypts data on Secure Enclave with a key identified by keyTag
@@ -85,7 +85,7 @@ declare class NodeSecureEnclave {
      * @param options
      * @returns decrypted data
      */
-    static decrypt(options: EncryptDecryptArg): Buffer;
+    static decrypt(options: EncryptDecryptArg): Promise<Buffer>;
 }
 
 export = NodeSecureEnclave;
