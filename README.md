@@ -1,5 +1,7 @@
 # Secure Enclave module for node.js and Electron
 
+![CI Checks](https://github.com/antelle/node-secure-enclave/workflows/CI%20Checks/badge.svg)
+
 This module provides support for Secure Enclave operations in Electron apps.
 
 ## Demo
