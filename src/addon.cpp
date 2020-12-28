@@ -22,7 +22,8 @@ Napi::Value createKeyPair(const Napi::CallbackInfo& info) {
     }
 
     auto_release<SecKeyRef> existingPrivateKey = nullptr;
-    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&existingPrivateKey));
+    auto existingKeyStatus = SecItemCopyMatching(queryAttributes,
+        reinterpret_cast<CFTypeRef*>(&existingPrivateKey));
 
     if (existingKeyStatus == errSecSuccess) {
         auto err = Napi::Error::New(env, "A key with this keyTag already exists, please delete it first");
@@ -108,7 +109,8 @@ Napi::Value findKeyPair(const Napi::CallbackInfo& info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes,
+        reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status == errSecItemNotFound) {
         return env.Null();
@@ -179,7 +181,8 @@ Napi::Value encryptData(const Napi::CallbackInfo& info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes,
+        reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status != errSecSuccess) {
         return throwErrorWithCode(env, status, "SecItemCopyMatching");
@@ -227,7 +230,8 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes,
+        reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status != errSecSuccess) {
         return throwErrorWithCode(env, status, "SecItemCopyMatching");
@@ -245,6 +249,14 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         encryptedData, &error);
     if (error) {
+        auto code = CFErrorGetCode(error);
+        if (code == -2) { // is there a constant for this?
+            auto err = Napi::Error::New(env, "User refused to authenticate with Touch ID");
+            err.Set("rejected", Napi::Boolean::New(env, true));
+            err.Set("code", Napi::Number::New(env, code));
+            err.ThrowAsJavaScriptException();
+            return env.Null();
+        }
         return throwErrorWithCFError(env, error, "SecKeyCreateDecryptedData");
     }
 
@@ -253,7 +265,6 @@ Napi::Value decryptData(const Napi::CallbackInfo& info) {
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
     exports.DefineProperty(Napi::PropertyDescriptor::Accessor<isSupported>("isSupported", napi_enumerable));
-    exports.Set("isSupported", Napi::Function::New(env, isSupported));
 
     exports.Set("createKeyPair", Napi::Function::New(env, createKeyPair));
     exports.Set("findKeyPair", Napi::Function::New(env, findKeyPair));

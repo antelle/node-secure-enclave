@@ -3,23 +3,31 @@
 #include <Security/Security.h>
 
 Napi::Value throwErrorWithCode(Napi::Env env, long code, const std::string& op) {
+    std::string msg;
+    std::string extraProp;
     if (code == errSecSuccess) {
-        Napi::Error::New(env, op + ": unknown error, code 0").ThrowAsJavaScriptException();
+        msg = op + ": unknown error without error code";
     } else if (code == errSecItemNotFound) {
-        auto err = Napi::Error::New(env, "Key not found in Secure Enclave");
-        err.Set("keyNotFound", Napi::Boolean::New(env, true));
-        err.ThrowAsJavaScriptException();
+        extraProp = "keyNotFound";
+        msg = "Key not found in Secure Enclave";
+    } else if (code == errSecParam) {
+        extraProp = "badParam";
+        msg = op + ": bad parameter";
     } else {
         auto_release errorMessage = SecCopyErrorMessageString(code, NULL);
         if (errorMessage) {
             auto str = CFStringGetCStringPtr(errorMessage, kCFStringEncodingUTF8);
-            auto msg = op + ": " + str;
-            Napi::Error::New(env, msg).ThrowAsJavaScriptException();
+            msg = op + ": " + str;
         } else {
-            auto msg = op + ": error code " + std::to_string(code);
-            Napi::Error::New(env, msg).ThrowAsJavaScriptException();
+            msg = op + ": error code " + std::to_string(code);
         }
     }
+    auto err = Napi::Error::New(env, msg);
+    err.Set("code", Napi::Number::New(env, code));
+    if (!extraProp.empty()) {
+        err.Set(extraProp, Napi::Boolean::New(env, true));
+    }
+    err.ThrowAsJavaScriptException();
     return env.Null();
 }
 
@@ -37,37 +45,37 @@ Napi::Value throwNotSupportedError(Napi::Env env) {
 
 auto_release<CFDataRef> getKeyTagFromArgs(const Napi::CallbackInfo& info) {
     auto env = info.Env();
-    
+
     if (info.Length() != 1) {
         Napi::TypeError::New(env, "Expected exactly one argument").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     if (!info[0].IsObject()) {
         Napi::TypeError::New(env, "options is not an object").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     auto arg = info[0].ToObject();
-    
+
     if (!arg.Has("keyTag")) {
         Napi::TypeError::New(env, "keyTag property is missing").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     auto keyTagProp = arg.Get("keyTag");
     if (!keyTagProp.IsString()) {
         Napi::TypeError::New(env, "keyTag is not a string").ThrowAsJavaScriptException();
         return nullptr;
     }
     auto keyTag = keyTagProp.As<Napi::String>();
-    
+
     auto keyTagStr = keyTag.Utf8Value();
     if (keyTagStr.length() == 0) {
         Napi::TypeError::New(env, "keyTag cannot be empty").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     return CFDataCreate(kCFAllocatorDefault,
                           reinterpret_cast<const UInt8*>(keyTagStr.c_str()), keyTagStr.length());
 }
@@ -89,7 +97,7 @@ auto_release<CFMutableDictionaryRef> getKeyQueryAttributesFromArgs(const Napi::C
 #ifndef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     CFDictionaryAddValue(queryAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
 #endif
-    
+
     return queryAttributes;
 }
 
@@ -100,38 +108,39 @@ auto_release<SecKeyRef> getPrivateKeyFromArgs(const Napi::CallbackInfo& info) {
     }
 
     SecKeyRef privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, (CFTypeRef*)(&privateKey));
-    
+    auto status = SecItemCopyMatching(queryAttributes,
+        const_cast<CFTypeRef*>(reinterpret_cast<const CFTypeRef*>(&privateKey)));
+
     if (status != errSecSuccess) {
         throwErrorWithCode(info.Env(), status, "SecItemCopyMatching");
         return nullptr;
     }
-    
+
     return privateKey;
 }
 
 auto_release<CFDataRef> getDataFromArgs(const Napi::CallbackInfo& info) {
     auto env = info.Env();
-    
+
     auto object = info[0].ToObject();
-    
+
     if (!object.Has("data")) {
         Napi::TypeError::New(env, "data property is missing").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     auto dataProp = object.Get("data");
     if (!dataProp.IsBuffer()) {
         Napi::TypeError::New(env, "data is not a buffer").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     auto buffer = dataProp.As<Napi::Buffer<UInt8>>();
     if (buffer.ByteLength() == 0) {
         Napi::TypeError::New(env, "data cannot be empty").ThrowAsJavaScriptException();
         return nullptr;
     }
-    
+
     return CFDataCreate(kCFAllocatorDefault, buffer.Data(), buffer.ByteLength());
 }
 

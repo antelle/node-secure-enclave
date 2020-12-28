@@ -115,6 +115,17 @@ describe('node-secure-enclave', () => {
             assert.strictEqual(decrypted instanceof Buffer, true);
             assert.strictEqual(decrypted.toString('hex'), data.toString('hex'));
         });
+
+        it('throws an error for bad data', () => {
+            const data = Buffer.from('broken');
+
+            nodeSecureEnclave().createKeyPair({ keyTag });
+
+            assert.throws(
+                () => nodeSecureEnclave().decrypt({ keyTag, data }),
+                /SecKeyCreateDecryptedData/
+            );
+        });
     });
 
     function nodeSecureEnclave() {

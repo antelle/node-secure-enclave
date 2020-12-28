@@ -58,16 +58,28 @@ declare class NodeSecureEnclave {
     static deleteKeyPair(options: KeyOperationArg): boolean;
 
     /**
-     * Encrypts the data using the key identified by keyTag.
-     * Data doesn't have to be padded, any non-empty Buffer should work
+     * Encrypts data on Secure Enclave with a key identified by keyTag
+     *  using ECIESEncryptionCofactorVariableIVX963SHA256AESGCM algorithm.
+     * Data doesn't have to be padded, any non-empty Buffer should work.
+     * Throws an error if the requested key is not found
+     *  or there was an encryption error.
      * @param options
      * @returns encrypted data
      */
     static encrypt(options: EncryptDecryptArg): Buffer;
 
     /**
-     * Decrypts the data using the key identified by keyTag.
-     * Data doesn't have to be padded, any non-empty Buffer should work
+     * Decrypts data on Secure Enclave with a key identified by keyTag
+     *  using ECIESEncryptionCofactorVariableIVX963SHA256AESGCM algorithm.
+     * Accepts data returned by `encrypt`, no padding or encoding is required.
+     * This method will show the Touch ID prompt and block until it's approved.
+     * Possible cases that can cause an error:
+     *  - the requested key is not found => error.keyNotFound = true
+     *  - data is invalid or cannot be decrypted with this key => error.badParam = true
+     *  - user rejected the Touch ID request using the Cancel button => error.rejected = true
+     *  - there was a decryption error
+     *  - system refused to show the Touch ID prompt
+     *  - Touch ID request timed out
      * @param options
      * @returns decrypted data
      */
