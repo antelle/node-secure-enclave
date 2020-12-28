@@ -67,7 +67,7 @@ if (key) {
 }
 ```
 
-Inspect [the type definition](node-secure-enclave.d.ts) for more details about the API.
+Inspect [node-secure-enclave.d.ts](node-secure-enclave.d.ts) for detailed information about the API.
 
 ## Library development
 
