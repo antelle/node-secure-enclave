@@ -16,10 +16,6 @@ And on your Touch Bar:
 
 <img src="img/touch-bar.png" width="601" alt="node-secure-enclave screenshot: touch bar" />
 
-## Status
-
-Unstable, not tested yet, I'm actively working on this project, things may break. Use at your own risk.
-
 ## Features
 
 - no dependencies, no bloatware
