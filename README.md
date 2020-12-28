@@ -92,6 +92,11 @@ Run unpackaged app to iterate on UI faster (API won't work there):
 npm run test-app-unpackaged
 ```
 
+Run unit tests:
+```sh
+npm test
+```
+
 ## Evil Electron features
 
 Since you're going to store secrets in Secure Enclave, it's essential that malicious apps can't run code under your app's identity. I have a module for you that disables evil features in Electron: [electron-evil-feature-patcher](https://github.com/antelle/electron-evil-feature-patcher), this will remove all debugging flags in your app.
