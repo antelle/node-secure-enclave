@@ -33,7 +33,7 @@ Development:
 - the app must be codesigned
 - provisioning profile, see [below](#library-development)
 - Xcode and command-line tools
-- it's strongly recommended to [lock down your Electron](#electron-evil-features)
+- it's strongly recommended to [lock down your Electron](#evil-electron-features)
 
 ## API
 
