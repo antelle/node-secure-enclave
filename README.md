@@ -33,6 +33,7 @@ Development:
 - the app must be codesigned
 - provisioning profile, see [below](#library-development)
 - Xcode and command-line tools
+- it's strongly recommended to [lock down your Electron](#electron-evil-features)
 
 ## API
 
@@ -90,6 +91,10 @@ Run unpackaged app to iterate on UI faster (API won't work there):
 ```sh
 npm run test-app-unpackaged
 ```
+
+## Evil Electron features
+
+Since you're going to store secrets in Secure Enclave, it's essential that malicious apps can't run code under your app's identity. I have a module for you that disabled evil features in Electron: [electron-evil-feature-patcher](https://github.com/antelle/electron-evil-feature-patcher), this will disable all debugging flags in your app.
 
 ## Troubleshooting
 
