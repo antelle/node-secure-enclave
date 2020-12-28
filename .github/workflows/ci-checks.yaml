@@ -16,7 +16,7 @@ jobs:
         run: npm ci
       - name: Build test module
         run: npm run build-for-testing-node
-      - name: Run test
+      - name: Run tests
         run: npm test
       - name: Validate typings
         run: npm run validate-typings

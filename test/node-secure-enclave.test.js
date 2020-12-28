@@ -20,7 +20,7 @@ describe('node-secure-enclave', () => {
     });
 
     describe('createKeyPair', () => {
-        testCommonMethodBehavior(nodeSecureEnclave().createKeyPair);
+        testCommonMethodBehavior('createKeyPair');
 
         it('creates a new key pair', () => {
             const key = nodeSecureEnclave().createKeyPair({ keyTag });
@@ -58,7 +58,7 @@ describe('node-secure-enclave', () => {
     });
 
     describe('deleteKeyPair', () => {
-        testCommonMethodBehavior(nodeSecureEnclave().deleteKeyPair);
+        testCommonMethodBehavior('deleteKeyPair');
 
         it('deletes a key pair', () => {
             const key = nodeSecureEnclave().createKeyPair({ keyTag });
@@ -80,7 +80,7 @@ describe('node-secure-enclave', () => {
     });
 
     describe('findKeyPair', () => {
-        testCommonMethodBehavior(nodeSecureEnclave().findKeyPair);
+        testCommonMethodBehavior('findKeyPair');
 
         it('finds an existing key', () => {
             const key = nodeSecureEnclave().createKeyPair({ keyTag });
@@ -99,8 +99,8 @@ describe('node-secure-enclave', () => {
     });
 
     describe('encrypt and decrypt', () => {
-        testDataMethodBehavior(nodeSecureEnclave().encrypt);
-        testDataMethodBehavior(nodeSecureEnclave().decrypt);
+        testDataMethodBehavior('encrypt');
+        testDataMethodBehavior('decrypt');
 
         it('encrypts and decrypts data', () => {
             const data = Buffer.from('Hello, world!');
@@ -121,8 +121,10 @@ describe('node-secure-enclave', () => {
         return require('..');
     }
 
-    function testCommonMethodBehavior(method) {
-        it(`has '${method} method`, () => {
+    function testCommonMethodBehavior(methodName) {
+        const method = nodeSecureEnclave()[methodName];
+
+        it(`has ${methodName} method`, () => {
             assert.strictEqual(typeof method, 'function');
         });
 
@@ -147,8 +149,10 @@ describe('node-secure-enclave', () => {
         });
     }
 
-    function testDataMethodBehavior(method) {
-        testCommonMethodBehavior(method);
+    function testDataMethodBehavior(methodName) {
+        testCommonMethodBehavior(methodName);
+
+        const method = nodeSecureEnclave()[methodName];
 
         it('throws on missing data', () => {
             assert.throws(() => method({ keyTag }), /TypeError: data property is missing/);
