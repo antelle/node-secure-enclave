@@ -96,6 +96,8 @@ npm run test-app-unpackaged
 
 Since you're going to store secrets in Secure Enclave, it's essential that malicious apps can't run code under your app's identity. I have a module for you that disabled evil features in Electron: [electron-evil-feature-patcher](https://github.com/antelle/electron-evil-feature-patcher), this will disable all debugging flags in your app.
 
+Otherwise, anyone can launch your app with `--inspect-brk` and enjoy your secrets from Secure Enclave, which defeats the purpose of code signing and provisioning.
+
 ## Troubleshooting
 
 There are several common errors:
