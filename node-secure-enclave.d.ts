@@ -82,7 +82,7 @@ declare class NodeSecureEnclave {
      * Decrypts data on Secure Enclave with a key identified by keyTag
      *  using ECIESEncryptionCofactorVariableIVX963SHA256AESGCM algorithm.
      * Accepts data returned by `encrypt`, no padding or encoding is required.
-     * This method will show the Touch ID prompt and block until it's approved.
+     * This method will show the Touch ID prompt and wait until it's approved or rejected.
      * Possible cases that can cause an error:
      *  - the requested key is not found => error.keyNotFound = true
      *  - data is invalid or cannot be decrypted with this key => error.badParam = true
