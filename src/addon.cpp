@@ -342,7 +342,8 @@ void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *decr
 
     auto dataBytePtr = CFDataGetBytePtr(decryptedData);
 
-    // that's not quite correct, but meh
+    // clean up our copy of decrypted data
+    // this is not const-correct, but looks like there's no way to get CFMutableData from SecKeyCreateDecryptedData
     memset(const_cast<UInt8 *>(dataBytePtr), 0, CFDataGetLength(decryptedData));
 }
 
