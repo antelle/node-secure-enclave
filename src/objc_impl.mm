@@ -9,13 +9,46 @@ bool isBiometricAuthSupported() {
         return supported;
     }
     LAContext *context = [[LAContext alloc] init];
-    supported = [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil];
+    NSError *error = nil;
+    supported = [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+    if (!supported && context.biometryType == LABiometryTypeTouchID && error && error.code == LAErrorBiometryLockout) {
+        supported = true;
+    }
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     supported = true;
 #endif
     [context release];
     checked = true;
     return supported;
+}
+
+void tryAuthenticate(LAContext *context, bool useBiometrics, CFStringRef touchIdPrompt,
+                     CFMutableDictionaryRef queryAttributes, void *callbackData, bool retryOnLockout) {
+    CFRetain(touchIdPrompt);
+    LAPolicy policy =
+        useBiometrics ? LAPolicyDeviceOwnerAuthenticationWithBiometrics : LAPolicyDeviceOwnerAuthentication;
+    [context evaluatePolicy:policy
+            localizedReason:(NSString *)touchIdPrompt
+                      reply:^(BOOL success, NSError *_Nullable error) {
+                        long errorCode = 0;
+                        if (!success) {
+                            errorCode = error ? error.code ? error.code : 1 : 2;
+                        }
+                        if (useBiometrics && errorCode == LAErrorBiometryLockout && retryOnLockout) {
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                              tryAuthenticate(context, false, touchIdPrompt, queryAttributes, callbackData, false);
+                              CFRelease(touchIdPrompt);
+                            });
+                        } else if (!useBiometrics && success) {
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                              tryAuthenticate(context, true, touchIdPrompt, queryAttributes, callbackData, false);
+                              CFRelease(touchIdPrompt);
+                            });
+                        } else {
+                            CFRelease(touchIdPrompt);
+                            resumeDecryptWithAuthentication(callbackData, errorCode);
+                        }
+                      }];
 }
 
 void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef queryAttributes, void *callbackData) {
@@ -27,15 +60,15 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef qu
 #else
     LAContext *context = [[LAContext alloc] init];
     CFDictionaryAddValue(queryAttributes, kSecUseAuthenticationContext, context);
-    [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-            localizedReason:(NSString *)touchIdPrompt
-                      reply:^(BOOL success, NSError *_Nullable error) {
-                        long errorCode = 0;
-                        if (!success) {
-                            errorCode = error ? error.code ? error.code : -1 : -1;
-                        }
-                        resumeDecryptWithAuthentication(callbackData, errorCode);
-                      }];
     [context release];
+
+    NSError *error = nil;
+    [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+
+    if (error && error.code == LAErrorBiometryLockout) {
+        tryAuthenticate(context, false, touchIdPrompt, queryAttributes, callbackData, false);
+    } else {
+        tryAuthenticate(context, true, touchIdPrompt, queryAttributes, callbackData, true);
+    }
 #endif
 }

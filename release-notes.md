@@ -1,5 +1,8 @@
 Release notes
 -------------
+##### v0.3.2 (2020-12-29)
+`*` password authentication prompt on biometry lockout  
+
 ##### v0.3.1 (2020-12-29)
 `+` erasing decrypted data in the library  
 
