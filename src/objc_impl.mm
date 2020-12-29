@@ -14,6 +14,9 @@ bool isBiometricAuthSupported() {
     if (!supported && context.biometryType == LABiometryTypeTouchID && error && error.code == LAErrorBiometryLockout) {
         supported = true;
     }
+    if (error) {
+        [error release];
+    }
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     supported = true;
 #endif
@@ -33,6 +36,9 @@ void tryAuthenticate(LAContext *context, bool useBiometrics, CFStringRef touchId
                         long errorCode = 0;
                         if (!success) {
                             errorCode = error ? error.code ? error.code : 1 : 2;
+                        }
+                        if (error) {
+                            [error release];
                         }
                         if (useBiometrics && errorCode == LAErrorBiometryLockout && retryOnLockout) {
                             dispatch_async(dispatch_get_main_queue(), ^{
@@ -64,6 +70,9 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef qu
 
     NSError *error = nil;
     [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+    if (error) {
+        [error release];
+    }
 
     if (error && error.code == LAErrorBiometryLockout) {
         tryAuthenticate(context, false, touchIdPrompt, queryAttributes, callbackData, false);

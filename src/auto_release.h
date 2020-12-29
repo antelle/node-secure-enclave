@@ -20,4 +20,8 @@ template <typename T> class auto_release {
     }
 
     operator T() const { return resource_; }
+
+    T *operator&() { return &resource_; }
+
+    CFTypeRef *asCFTypeRef() { return const_cast<CFTypeRef *>(reinterpret_cast<const CFTypeRef *>(&resource_)); }
 };

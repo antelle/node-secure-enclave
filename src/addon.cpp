@@ -38,7 +38,7 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> existingPrivateKey = nullptr;
-    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, reinterpret_cast<CFTypeRef *>(&existingPrivateKey));
+    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, existingPrivateKey.asCFTypeRef());
 
     if (existingKeyStatus == errSecSuccess) {
         rejectWithMessageAndProp(deferred, "A key with this keyTag already exists, please delete it first",
@@ -88,7 +88,7 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo &info) {
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
 #endif
 
-    CFErrorRef error = nullptr;
+    auto_release<CFErrorRef> error = nullptr;
     auto_release privateKey = SecKeyCreateRandomKey(creteKeyAttributes, &error);
     if (!privateKey) {
         rejectWithCFError(deferred, error, "SecKeyCreateRandomKey");
@@ -129,7 +129,7 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
 
     if (status == errSecItemNotFound) {
         deferred.Resolve(env.Null());
@@ -145,7 +145,7 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo &info) {
         return deferred.Promise();
     }
 
-    CFErrorRef error = nullptr;
+    auto_release<CFErrorRef> error = nullptr;
     auto_release publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error);
     if (!publicKeyData) {
         rejectWithCFError(deferred, error, "SecKeyCopyExternalRepresentation");
@@ -214,7 +214,7 @@ Napi::Promise encryptData(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
@@ -234,7 +234,7 @@ Napi::Promise encryptData(const Napi::CallbackInfo &info) {
         return deferred.Promise();
     }
 
-    CFErrorRef error = nullptr;
+    auto_release<CFErrorRef> error = nullptr;
     auto_release encryptedData = SecKeyCreateEncryptedData(
         publicKey, kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM, decryptedData, &error);
     if (error) {
@@ -316,7 +316,7 @@ void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *decr
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
@@ -330,7 +330,7 @@ void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *decr
         return;
     }
 
-    CFErrorRef error = nullptr;
+    auto_release<CFErrorRef> error = nullptr;
     auto_release decryptedData = SecKeyCreateDecryptedData(
         privateKey, kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM, encryptedData, &error);
     if (error) {

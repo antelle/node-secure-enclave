@@ -1,5 +1,8 @@
 Release notes
 -------------
+##### v0.3.3 (2020-12-30)
+`+` fixed a memory leak in errors  
+
 ##### v0.3.2 (2020-12-29)
 `*` password authentication prompt on biometry lockout  
 
