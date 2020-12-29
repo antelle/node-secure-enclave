@@ -1,6 +1,6 @@
 {
   "name": "secure-enclave",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Secure Enclave module for node.js and Electron",
   "main": "build/Release/secure_enclave.node",
   "types": "node-secure-enclave.d.ts",
