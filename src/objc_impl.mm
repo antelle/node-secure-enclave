@@ -9,9 +9,7 @@ bool isBiometricAuthSupported() {
         return supported;
     }
     LAContext *context = [[LAContext alloc] init];
-    supported = [context
-        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                    error:nil];
+    supported = [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil];
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     supported = true;
 #endif
@@ -20,9 +18,7 @@ bool isBiometricAuthSupported() {
     return supported;
 }
 
-void authenticateAndDecrypt(CFStringRef touchIdPrompt,
-                            CFMutableDictionaryRef queryAttributes,
-                            void *callbackData) {
+void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef queryAttributes, void *callbackData) {
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
       // we don't need this thread, it's here for life-like tests
@@ -30,18 +26,16 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt,
     });
 #else
     LAContext *context = [[LAContext alloc] init];
-    CFDictionaryAddValue(queryAttributes, kSecUseAuthenticationContext,
-                         context);
-    [context
-         evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-        localizedReason:(NSString *)touchIdPrompt
-                  reply:^(BOOL success, NSError *_Nullable error) {
-                    long errorCode = 0;
-                    if (!success) {
-                        errorCode = error ? error.code ? error.code : -1 : -1;
-                    }
-                    resumeDecryptWithAuthentication(callbackData, errorCode);
-                  }];
+    CFDictionaryAddValue(queryAttributes, kSecUseAuthenticationContext, context);
+    [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+            localizedReason:(NSString *)touchIdPrompt
+                      reply:^(BOOL success, NSError *_Nullable error) {
+                        long errorCode = 0;
+                        if (!success) {
+                            errorCode = error ? error.code ? error.code : -1 : -1;
+                        }
+                        resumeDecryptWithAuthentication(callbackData, errorCode);
+                      }];
     [context release];
 #endif
 }

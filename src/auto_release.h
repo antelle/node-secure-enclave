@@ -10,9 +10,7 @@ template <typename T> class auto_release {
   public:
     auto_release(T resource) : resource_(resource) {}
 
-    auto_release(auto_release &&other) noexcept : resource_(other.resource_) {
-        other.resource_ = nullptr;
-    }
+    auto_release(auto_release &&other) noexcept : resource_(other.resource_) { other.resource_ = nullptr; }
 
     ~auto_release() {
         if (resource_) {
