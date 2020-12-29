@@ -29,7 +29,7 @@
     "lint": "eslint test/*.js test-app/*.js",
 
     "format": "npm run prettier && npm run clang-format",
-    "clang-format": "clang-format -i -style='{BasedOnStyle: llvm, IndentWidth: 4, ColumnLimit: 120}' src/*",
+    "clang-format": "clang-format -i src/*",
     "prettier": "prettier --write test/*.js test-app/*.{js,css,html} *.ts"
   },
   "author": "Antelle",
