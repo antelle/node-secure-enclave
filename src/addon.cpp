@@ -38,7 +38,7 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> existingPrivateKey = nullptr;
-    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, existingPrivateKey.asCFTypeRef());
+    auto existingKeyStatus = SecItemCopyMatching(queryAttributes, existingPrivateKey.cfTypeRef());
 
     if (existingKeyStatus == errSecSuccess) {
         rejectWithMessageAndProp(deferred, "A key with this keyTag already exists, please delete it first",
@@ -129,7 +129,7 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.cfTypeRef());
 
     if (status == errSecItemNotFound) {
         deferred.Resolve(env.Null());
@@ -214,7 +214,7 @@ Napi::Promise encryptData(const Napi::CallbackInfo &info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.cfTypeRef());
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
@@ -316,7 +316,7 @@ void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *decr
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes, privateKey.asCFTypeRef());
+    auto status = SecItemCopyMatching(queryAttributes, privateKey.cfTypeRef());
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
