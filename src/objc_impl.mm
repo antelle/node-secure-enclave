@@ -36,7 +36,10 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt,
          evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
         localizedReason:(NSString *)touchIdPrompt
                   reply:^(BOOL success, NSError *_Nullable error) {
-                    long errorCode = success ? 0 : (error && error.code || -1);
+                    long errorCode = 0;
+                    if (!success) {
+                        errorCode = error ? error.code ? error.code : -1 : -1;
+                    }
                     resumeDecryptWithAuthentication(callbackData, errorCode);
                   }];
     [context release];
