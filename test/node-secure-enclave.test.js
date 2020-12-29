@@ -121,7 +121,8 @@ describe('node-secure-enclave', function () {
         it('throws on empty touchIdPrompt', async () => {
             const data = Buffer.from('test');
             await assert.rejects(
-                async () => await await nodeSecureEnclave().decrypt({ keyTag, data, touchIdPrompt: '' }),
+                async () =>
+                    await await nodeSecureEnclave().decrypt({ keyTag, data, touchIdPrompt: '' }),
                 /TypeError: touchIdPrompt cannot be empty/
             );
         });
@@ -135,7 +136,11 @@ describe('node-secure-enclave', function () {
             assert.strictEqual(encrypted instanceof Buffer, true);
             assert.notStrictEqual(encrypted.toString('hex'), data.toString('hex'));
 
-            const decrypted = await nodeSecureEnclave().decrypt({ keyTag, touchIdPrompt, data: encrypted });
+            const decrypted = await nodeSecureEnclave().decrypt({
+                keyTag,
+                touchIdPrompt,
+                data: encrypted
+            });
             assert.strictEqual(decrypted instanceof Buffer, true);
             assert.strictEqual(decrypted.toString('hex'), data.toString('hex'));
         });
