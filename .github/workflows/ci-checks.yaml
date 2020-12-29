@@ -14,9 +14,11 @@ jobs:
           fetch-depth: 0
       - name: Install npm modules
         run: npm ci
-      - name: Run tests
-        run: npm test
+      - name: Lint
+        run: npm run lint
       - name: Validate typings
         run: npm run validate-typings
+      - name: Run tests
+        run: npm test
       - name: Build for Electron
         run: npm run build-electron

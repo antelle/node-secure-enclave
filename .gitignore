@@ -9,3 +9,4 @@ bin/
 *.user
 *.iml
 xcode/
+.vscode/

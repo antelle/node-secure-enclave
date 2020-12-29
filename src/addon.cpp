@@ -2,16 +2,21 @@
 #include "helpers.h"
 #include <napi.h>
 #include <Security/Security.h>
-#include <memory>
 
 constexpr int KEY_SIZE_IN_BITS = 256;
 
-struct DecryptArgs {
-    auto_release<CFMutableDictionaryRef> queryAttributes;
-    auto_release<CFDataRef> encryptedData;
-};
+struct DecryptContext;
 
-static std::unique_ptr<DecryptArgs> lastDecryptArgs;
+void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext*, void*);
+using TSFN = Napi::TypedThreadSafeFunction<DecryptContext, void, decryptFinalizeCallback>;
+
+struct DecryptContext {
+    Napi::Promise::Deferred deferred;
+    TSFN tsfn;
+    CFMutableDictionaryRef queryAttributes;
+    CFDataRef encryptedData;
+    long authErrorCode;
+};
 
 Napi::Value isSupported(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(info.Env(), isBiometricAuthSupported());
@@ -19,7 +24,7 @@ Napi::Value isSupported(const Napi::CallbackInfo& info) {
 
 Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
     auto env = info.Env();
-    
+
     auto deferred = Napi::Promise::Deferred::New(env);
 
     if (rejectIfNotSupported(deferred)) {
@@ -106,14 +111,14 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
 
     auto ret = Napi::Object::New(env);
     ret.Set("publicKey", cfDataToBuffer(env, publicKeyData));
-    
+
     deferred.Resolve(ret);
     return deferred.Promise();
 }
 
 Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    
+
     auto deferred = Napi::Promise::Deferred::New(env);
 
     if (rejectIfNotSupported(deferred)) {
@@ -152,7 +157,7 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
 
     auto ret = Napi::Object::New(env);
     ret.Set("publicKey", cfDataToBuffer(env, publicKeyData));
-    
+
     deferred.Resolve(ret);
     return deferred.Promise();
 }
@@ -253,48 +258,83 @@ Napi::Promise decryptData(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
+    // released in decryptFinalizeCallback
+    auto queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
         return deferred.Promise();
     }
 
-    auto_release encryptedData = getDataFromArgs(info, deferred);
+    // released in decryptFinalizeCallback
+    auto encryptedData = getDataFromArgs(info, deferred);
     if (!encryptedData) {
         return deferred.Promise();
     }
-    
+
     auto_release touchIdPrompt = getTouchIdPromptFromArgs(info, deferred);
     if (!touchIdPrompt) {
         return deferred.Promise();
     }
-    
-    promptTouchId(touchIdPrompt, queryAttributes);
-    
-    lastDecryptArgs = std::unique_ptr<DecryptArgs>(new DecryptArgs {
-        std::move(queryAttributes),
-        std::move(encryptedData)
-    });
-    
-    return deferred.Promise();
+
+    auto promise = deferred.Promise();
+
+    auto decryptContext = new DecryptContext {
+        .deferred = std::move(deferred),
+        .queryAttributes = queryAttributes,
+        .encryptedData = encryptedData,
+        .authErrorCode = -1,
+    };
+
+    decryptContext->tsfn = TSFN::New(env, "decryptTSFN", 0, 1, decryptContext);
+
+    authenticateAndDecrypt(touchIdPrompt, queryAttributes, decryptContext);
+
+    return promise;
 }
 
-void resumeDecryptAfterTouchId(bool success, long errorCode) {
-    
-    lastDecryptArgs.reset();
-    /*auto_release<SecKeyRef> privateKey = nullptr;
+void resumeDecryptWithAuthentication(void* callbackData, long authErrorCode) {
+    auto decryptContext = reinterpret_cast<DecryptContext*>(callbackData);
+
+    decryptContext->authErrorCode = authErrorCode;
+
+    decryptContext->tsfn.BlockingCall(decryptContext);
+    decryptContext->tsfn.Release();
+}
+
+void decryptFinalizeCallback(Napi::Env env,
+                             Napi::Function,
+                             DecryptContext* decryptContext,
+                             void*) {
+    auto deferred = std::move(decryptContext->deferred);
+
+    auto authErrorCode = decryptContext->authErrorCode;
+
+    auto_release queryAttributes = decryptContext->queryAttributes;
+    auto_release encryptedData = decryptContext->encryptedData;
+
+    delete decryptContext;
+
+    if (authErrorCode) {
+        auto err = Napi::Error::New(env, "User refused to authenticate with Touch ID");
+        err.Set("rejected", Napi::Boolean::New(env, true));
+        err.Set("code", Napi::Number::New(env, authErrorCode));
+        deferred.Reject(err.Value());
+        return;
+    }
+
+    auto_release<SecKeyRef> privateKey = nullptr;
     auto status = SecItemCopyMatching(queryAttributes,
         reinterpret_cast<CFTypeRef*>(&privateKey));
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
-        return deferred.Promise();
+        return;
     }
 
     auto supported = SecKeyIsAlgorithmSupported(privateKey, kSecKeyOperationTypeDecrypt,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
         rejectWithMessage(deferred, "Algorithm not supported");
-        return deferred.Promise();
+        return;
     }
 
     CFErrorRef error = nullptr;
@@ -302,20 +342,12 @@ void resumeDecryptAfterTouchId(bool success, long errorCode) {
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         encryptedData, &error);
     if (error) {
-        auto code = CFErrorGetCode(error);
-        if (code == -2) { // is there a constant for this?
-            auto err = Napi::Error::New(env, "User refused to authenticate with Touch ID");
-            err.Set("rejected", Napi::Boolean::New(env, true));
-            err.Set("code", Napi::Number::New(env, code));
-            deferred.Reject(err.Value());
-            return deferred.Promise();
-        }
         rejectWithCFError(deferred, error, "SecKeyCreateDecryptedData");
-        return deferred.Promise();
+        return;
     }
 
     deferred.Resolve(cfDataToBuffer(env, decryptedData));
-    return deferred.Promise();*/
+    return;
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {

@@ -6,19 +6,31 @@
   "types": "node-secure-enclave.d.ts",
   "scripts": {
     "start": "npm run clean && npm run build-electron && npm run package-test-app && npm run copy-addon-to-test-app && npm run sign-test-app && npm run test-app",
+    "test": "npm run build-for-testing-node && npm run unit-tests",
+
+    "clean": "rm -rf build/Release bin",
+    "clean-all": "rm -rf build bin tmp xcode $(node -p \"require('electron/package').version\")",
+
     "build-electron": "electron-rebuild",
     "build-node": "node-gyp configure build",
     "build-for-testing-node": "node-gyp configure --NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN=1 && node-gyp build",
-    "clean": "rm -rf build/Release bin",
-    "clean-all": "rm -rf build bin tmp xcode $(node -p \"require('electron/package').version\")",
-    "generate-xcode-project": "node-gyp configure -- -f xcode && mkdir -p xcode/node-secure-enclave.xcodeproj && mv build/binding.xcodeproj/project.pbxproj xcode/node-secure-enclave.xcodeproj/project.pbxproj",
+
     "copy-addon-to-test-app": "mkdir -p tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85 && cp bin/darwin-x64-85/node-secure-enclave.node tmp/test-app-darwin-x64/test-app.app/Contents/Resources/bin/darwin-x64-85/node-secure-enclave.node",
     "package-test-app": "electron-packager test-app test-app --overwrite=true --out=tmp --app-bundle-id=net.antelle.node-secure-enclave",
     "sign-test-app": "electron-osx-sign tmp/test-app-darwin-x64/test-app.app --entitlements=conf/test-app.entitlements.plist --gatekeeper-assess=false --provisioning-profile=conf/test-app.provisionprofile",
-    "test": "npm run build-for-testing-node && mocha",
+    "validate-typings": "tsc node-secure-enclave.d.ts",
+    "unit-tests": "mocha",
+
     "test-app": "tmp/test-app-darwin-x64/test-app.app/Contents/MacOS/test-app",
     "test-app-unpackaged": "electron test-app",
-    "validate-typings": "tsc node-secure-enclave.d.ts"
+
+    "generate-xcode-project": "node-gyp configure -- -f xcode && mkdir -p xcode/node-secure-enclave.xcodeproj && mv build/binding.xcodeproj/project.pbxproj xcode/node-secure-enclave.xcodeproj/project.pbxproj",
+
+    "lint": "eslint test/*.js test-app/*.js",
+
+    "format": "npm run prettier && npm run clang-format",
+    "clang-format": "clang-format -i -style='{BasedOnStyle: llvm, IndentWidth: 4}' src/*",
+    "prettier": "prettier --write test/*.js test-app/*.{js,css,html} *.ts"
   },
   "author": "Antelle",
   "license": "MIT",

@@ -1,6 +1,6 @@
 #include <LocalAuthentication/LocalAuthentication.h>
 
-void resumeDecryptAfterTouchId(bool success, long errorCode);
+void resumeDecryptWithAuthentication(void* callbackData, long authErrorCode);
 
 bool isBiometricAuthSupported() {
     static bool checked = false;
@@ -18,15 +18,23 @@ bool isBiometricAuthSupported() {
     return supported;
 }
 
-void promptTouchId(CFStringRef touchIdPrompt, CFMutableDictionaryRef queryAttributes) {
+void authenticateAndDecrypt(CFStringRef touchIdPrompt,
+                           CFMutableDictionaryRef queryAttributes,
+                           void* callbackData) {
+#ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        // we don't need this thread, it's here for life-like tests
+        resumeDecryptWithAuthentication(callbackData, 0);
+    });
+#else
     LAContext* context = [[LAContext alloc] init];
     CFDictionaryAddValue(queryAttributes, kSecUseAuthenticationContext, context);
     [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
             localizedReason:(NSString*)touchIdPrompt
                       reply:^(BOOL success, NSError* _Nullable error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            resumeDecryptAfterTouchId(success, error ? error.code : 0);
-        });
+        long errorCode = success ? 0 : (error && error.code || -1);
+        resumeDecryptWithAuthentication(callbackData, errorCode);
     }];
     [context release];
+#endif
 }

@@ -5,7 +5,9 @@
 #include <string>
 
 bool isBiometricAuthSupported();
-void promptTouchId(CFStringRef touchIdPrompt, CFMutableDictionaryRef queryAttributes);
+void authenticateAndDecrypt(CFStringRef touchIdPrompt,
+                           CFMutableDictionaryRef queryAttributes,
+                           void* callbackData);
 
 void rejectAsTypeError(Napi::Promise::Deferred& deferred, const std::string& message);
 void rejectWithMessage(Napi::Promise::Deferred& deferred, const std::string& message);

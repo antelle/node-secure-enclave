@@ -2,6 +2,7 @@ const assert = require('assert');
 
 const keyTag = 'net.antelle.node-secure-enclave.unit-tests.key';
 const keyTagAnother = 'net.antelle.node-secure-enclave.unit-tests.another-key';
+const touchIdPrompt = 'something';
 
 describe('node-secure-enclave', function () {
     this.timeout(10000);
@@ -102,9 +103,28 @@ describe('node-secure-enclave', function () {
         });
     });
 
-    describe('encrypt and decrypt', () => {
+    describe('encrypt', () => {
         testDataMethodBehavior('encrypt');
+    });
+
+    describe('decrypt', () => {
         testDataMethodBehavior('decrypt');
+
+        it('throws on missing touchIdPrompt', async () => {
+            const data = Buffer.from('test');
+            await assert.rejects(
+                async () => await await nodeSecureEnclave().decrypt({ keyTag, data }),
+                /TypeError: touchIdPrompt property is missing/
+            );
+        });
+
+        it('throws on empty touchIdPrompt', async () => {
+            const data = Buffer.from('test');
+            await assert.rejects(
+                async () => await await nodeSecureEnclave().decrypt({ keyTag, data, touchIdPrompt: '' }),
+                /TypeError: touchIdPrompt cannot be empty/
+            );
+        });
 
         it('encrypts and decrypts data', async () => {
             const data = Buffer.from('Hello, world!');
@@ -115,7 +135,7 @@ describe('node-secure-enclave', function () {
             assert.strictEqual(encrypted instanceof Buffer, true);
             assert.notStrictEqual(encrypted.toString('hex'), data.toString('hex'));
 
-            const decrypted = await nodeSecureEnclave().decrypt({ keyTag, data: encrypted });
+            const decrypted = await nodeSecureEnclave().decrypt({ keyTag, touchIdPrompt, data: encrypted });
             assert.strictEqual(decrypted instanceof Buffer, true);
             assert.strictEqual(decrypted.toString('hex'), data.toString('hex'));
         });
@@ -126,7 +146,7 @@ describe('node-secure-enclave', function () {
             await nodeSecureEnclave().createKeyPair({ keyTag });
 
             await assert.rejects(async () => {
-                await nodeSecureEnclave().decrypt({ keyTag, data });
+                await nodeSecureEnclave().decrypt({ keyTag, touchIdPrompt, data });
             }, /SecKeyCreateDecryptedData/);
         });
     });
@@ -185,28 +205,28 @@ describe('node-secure-enclave', function () {
 
         it('throws on missing data', async () => {
             await assert.rejects(
-                async () => await method({ keyTag }),
+                async () => await method({ keyTag, touchIdPrompt }),
                 /TypeError: data property is missing/
             );
         });
 
         it('throws on bad data type', async () => {
             await assert.rejects(
-                async () => await method({ keyTag, data: 'test' }),
+                async () => await method({ keyTag, touchIdPrompt, data: 'test' }),
                 /TypeError: data is not a buffer/
             );
         });
 
         it('throws on empty data', async () => {
             await assert.rejects(
-                async () => await method({ keyTag, data: Buffer.alloc(0) }),
+                async () => await method({ keyTag, touchIdPrompt, data: Buffer.alloc(0) }),
                 /TypeError: data cannot be empty/
             );
         });
 
         it('throws on a non-existing key', async () => {
             await assert.rejects(
-                async () => await method({ keyTag, data: Buffer.from('data') }),
+                async () => await method({ keyTag, touchIdPrompt, data: Buffer.from('data') }),
                 (e) => {
                     return (
                         e.message === 'Key not found in Secure Enclave' && e.keyNotFound === true
