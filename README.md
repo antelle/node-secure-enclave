@@ -32,7 +32,8 @@ Runtime:
 Development:
 - the app must be codesigned
 - provisioning profile, see [below](#library-development)
-- Xcode and command-line tools
+- Xcode with command-line tools
+- `clang-format`
 - it's strongly recommended to [lock down your Electron](#evil-electron-features)
 
 ## API
@@ -96,6 +97,11 @@ npm run test-app-unpackaged
 Run unit tests:
 ```sh
 npm test
+```
+
+Reformat all C++ and JavaScript:
+```sh
+npm format
 ```
 
 ## Evil Electron features
