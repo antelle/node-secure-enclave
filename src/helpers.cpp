@@ -2,38 +2,42 @@
 #include "auto_release.h"
 #include <Security/Security.h>
 
-void rejectAsTypeError(Napi::Promise::Deferred& deferred, const std::string& message) {
+void rejectAsTypeError(Napi::Promise::Deferred &deferred,
+                       const std::string &message) {
     auto env = deferred.Env();
-    
+
     auto err = Napi::TypeError::New(env, message);
 
     deferred.Reject(err.Value());
 }
 
-void rejectWithMessage(Napi::Promise::Deferred& deferred, const std::string& message) {
+void rejectWithMessage(Napi::Promise::Deferred &deferred,
+                       const std::string &message) {
     auto env = deferred.Env();
-    
+
     auto err = Napi::Error::New(env, message);
-    
+
     deferred.Reject(err.Value());
 }
 
-void rejectWithMessageAndProp(Napi::Promise::Deferred& deferred,
-                              const std::string& message, const std::string& prop) {
+void rejectWithMessageAndProp(Napi::Promise::Deferred &deferred,
+                              const std::string &message,
+                              const std::string &prop) {
     auto env = deferred.Env();
-    
+
     auto err = Napi::Error::New(env, message);
     err.Set(prop, true);
-    
+
     deferred.Reject(err.Value());
 }
 
-void rejectWithErrorCode(Napi::Promise::Deferred& deferred, long code, const std::string& op) {
+void rejectWithErrorCode(Napi::Promise::Deferred &deferred, long code,
+                         const std::string &op) {
     auto env = deferred.Env();
-    
+
     std::string msg;
     std::string extraProp;
-    
+
     if (code == errSecSuccess) {
         msg = op + ": unknown error without error code";
     } else if (code == errSecItemNotFound) {
@@ -45,13 +49,14 @@ void rejectWithErrorCode(Napi::Promise::Deferred& deferred, long code, const std
     } else {
         auto_release errorMessage = SecCopyErrorMessageString(code, NULL);
         if (errorMessage) {
-            auto str = CFStringGetCStringPtr(errorMessage, kCFStringEncodingUTF8);
+            auto str =
+                CFStringGetCStringPtr(errorMessage, kCFStringEncodingUTF8);
             msg = op + ": " + str;
         } else {
             msg = op + ": error code " + std::to_string(code);
         }
     }
-    
+
     auto err = Napi::Error::New(env, msg);
     err.Set("code", Napi::Number::New(env, code));
     if (!extraProp.empty()) {
@@ -60,20 +65,23 @@ void rejectWithErrorCode(Napi::Promise::Deferred& deferred, long code, const std
     deferred.Reject(err.Value());
 }
 
-void rejectWithCFError(Napi::Promise::Deferred& deferred, CFErrorRef error, const std::string& op) {
+void rejectWithCFError(Napi::Promise::Deferred &deferred, CFErrorRef error,
+                       const std::string &op) {
     auto code = CFErrorGetCode(error);
     rejectWithErrorCode(deferred, code, op);
 }
 
-bool rejectIfNotSupported(Napi::Promise::Deferred& deferred) {
+bool rejectIfNotSupported(Napi::Promise::Deferred &deferred) {
     if (!isBiometricAuthSupported()) {
-        rejectWithMessageAndProp(deferred, "Biometric auth is not supported", "notSupported");
+        rejectWithMessageAndProp(deferred, "Biometric auth is not supported",
+                                 "notSupported");
         return true;
     }
     return false;
 }
 
-CFDataRef getKeyTagFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred) {
+CFDataRef getKeyTagFromArgs(const Napi::CallbackInfo &info,
+                            Napi::Promise::Deferred &deferred) {
     if (info.Length() != 1) {
         rejectAsTypeError(deferred, "Expected exactly one argument");
         return nullptr;
@@ -105,32 +113,38 @@ CFDataRef getKeyTagFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Defer
     }
 
     return CFDataCreate(kCFAllocatorDefault,
-                          reinterpret_cast<const UInt8*>(keyTagStr.c_str()), keyTagStr.length());
+                        reinterpret_cast<const UInt8 *>(keyTagStr.c_str()),
+                        keyTagStr.length());
 }
 
-CFMutableDictionaryRef getKeyQueryAttributesFromArgs(const Napi::CallbackInfo& info,
-                                                                   Napi::Promise::Deferred& deferred) {
+CFMutableDictionaryRef
+getKeyQueryAttributesFromArgs(const Napi::CallbackInfo &info,
+                              Napi::Promise::Deferred &deferred) {
     auto_release keyTagData = getKeyTagFromArgs(info, deferred);
     if (!keyTagData) {
         return nullptr;
     }
 
-    auto queryAttributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
-        0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    auto queryAttributes = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks);
 
     CFDictionaryAddValue(queryAttributes, kSecClass, kSecClassKey);
-    CFDictionaryAddValue(queryAttributes, kSecAttrKeyClass, kSecAttrKeyClassPrivate);
+    CFDictionaryAddValue(queryAttributes, kSecAttrKeyClass,
+                         kSecAttrKeyClassPrivate);
     CFDictionaryAddValue(queryAttributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
     CFDictionaryAddValue(queryAttributes, kSecAttrApplicationTag, keyTagData);
     CFDictionaryAddValue(queryAttributes, kSecReturnRef, kCFBooleanTrue);
 #ifndef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
-    CFDictionaryAddValue(queryAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
+    CFDictionaryAddValue(queryAttributes, kSecAttrTokenID,
+                         kSecAttrTokenIDSecureEnclave);
 #endif
 
     return queryAttributes;
 }
 
-CFDataRef getDataFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred) {
+CFDataRef getDataFromArgs(const Napi::CallbackInfo &info,
+                          Napi::Promise::Deferred &deferred) {
     auto object = info[0].ToObject();
 
     if (!object.Has("data")) {
@@ -150,12 +164,14 @@ CFDataRef getDataFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferre
         return nullptr;
     }
 
-    return CFDataCreate(kCFAllocatorDefault, buffer.Data(), buffer.ByteLength());
+    return CFDataCreate(kCFAllocatorDefault, buffer.Data(),
+                        buffer.ByteLength());
 }
 
-CFStringRef getTouchIdPromptFromArgs(const Napi::CallbackInfo& info, Napi::Promise::Deferred& deferred) {
+CFStringRef getTouchIdPromptFromArgs(const Napi::CallbackInfo &info,
+                                     Napi::Promise::Deferred &deferred) {
     auto object = info[0].ToObject();
-    
+
     if (!object.Has("touchIdPrompt")) {
         rejectAsTypeError(deferred, "touchIdPrompt property is missing");
         return nullptr;
@@ -172,8 +188,9 @@ CFStringRef getTouchIdPromptFromArgs(const Napi::CallbackInfo& info, Napi::Promi
         rejectAsTypeError(deferred, "touchIdPrompt cannot be empty");
         return nullptr;
     }
-    
-    return CFStringCreateWithCString(kCFAllocatorDefault, touchIdPromptStr.c_str(), kCFStringEncodingUTF8);
+
+    return CFStringCreateWithCString(
+        kCFAllocatorDefault, touchIdPromptStr.c_str(), kCFStringEncodingUTF8);
 }
 
 Napi::Buffer<UInt8> cfDataToBuffer(Napi::Env env, CFDataRef cfData) {

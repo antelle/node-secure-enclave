@@ -1,14 +1,16 @@
 #include "auto_release.h"
 #include "helpers.h"
-#include <napi.h>
 #include <Security/Security.h>
+#include <napi.h>
 
 constexpr int KEY_SIZE_IN_BITS = 256;
 
 struct DecryptContext;
 
-void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext*, void*);
-using TSFN = Napi::TypedThreadSafeFunction<DecryptContext, void, decryptFinalizeCallback>;
+void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *,
+                             void *);
+using TSFN = Napi::TypedThreadSafeFunction<DecryptContext, void,
+                                           decryptFinalizeCallback>;
 
 struct DecryptContext {
     Napi::Promise::Deferred deferred;
@@ -18,11 +20,11 @@ struct DecryptContext {
     long authErrorCode;
 };
 
-Napi::Value isSupported(const Napi::CallbackInfo& info) {
+Napi::Value isSupported(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(info.Env(), isBiometricAuthSupported());
 }
 
-Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise createKeyPair(const Napi::CallbackInfo &info) {
     auto env = info.Env();
 
     auto deferred = Napi::Promise::Deferred::New(env);
@@ -31,19 +33,21 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
+    auto_release queryAttributes =
+        getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
         return deferred.Promise();
     }
 
     auto_release<SecKeyRef> existingPrivateKey = nullptr;
-    auto existingKeyStatus = SecItemCopyMatching(queryAttributes,
-        reinterpret_cast<CFTypeRef*>(&existingPrivateKey));
+    auto existingKeyStatus = SecItemCopyMatching(
+        queryAttributes, reinterpret_cast<CFTypeRef *>(&existingPrivateKey));
 
     if (existingKeyStatus == errSecSuccess) {
-        rejectWithMessageAndProp(deferred,
-                                 "A key with this keyTag already exists, please delete it first",
-                                 "keyExists");
+        rejectWithMessageAndProp(
+            deferred,
+            "A key with this keyTag already exists, please delete it first",
+            "keyExists");
         return deferred.Promise();
     } else if (existingKeyStatus != errSecItemNotFound) {
         rejectWithErrorCode(deferred, existingKeyStatus, "SecItemCopyMatching");
@@ -55,39 +59,47 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release keySize = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &KEY_SIZE_IN_BITS);
+    auto_release keySize = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType,
+                                          &KEY_SIZE_IN_BITS);
 
-    auto_release creteKeyAttributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
-        0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    auto_release creteKeyAttributes = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks);
 
-    auto_release privateKeyAttrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
-        0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    auto_release privateKeyAttrs = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks);
 
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrIsPermanent, kCFBooleanTrue);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrApplicationTag, keyTagData);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrLabel, keyTagData);
 
-    CFDictionaryAddValue(creteKeyAttributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
+    CFDictionaryAddValue(creteKeyAttributes, kSecAttrKeyType,
+                         kSecAttrKeyTypeEC);
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrKeySizeInBits, keySize);
-    CFDictionaryAddValue(creteKeyAttributes, kSecPrivateKeyAttrs, privateKeyAttrs);
+    CFDictionaryAddValue(creteKeyAttributes, kSecPrivateKeyAttrs,
+                         privateKeyAttrs);
 
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
-    auto_release publicKeyAttrs = CFDictionaryCreateMutable(kCFAllocatorDefault,
-        0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    auto_release publicKeyAttrs = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks);
 
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrIsPermanent, kCFBooleanTrue);
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrApplicationTag, keyTagData);
     CFDictionaryAddValue(publicKeyAttrs, kSecAttrLabel, keyTagData);
 
-    CFDictionaryAddValue(creteKeyAttributes, kSecPublicKeyAttrs, publicKeyAttrs);
+    CFDictionaryAddValue(creteKeyAttributes, kSecPublicKeyAttrs,
+                         publicKeyAttrs);
 #else
-    auto_release access = SecAccessControlCreateWithFlags(kCFAllocatorDefault,
-        kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+    auto_release access = SecAccessControlCreateWithFlags(
+        kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
         kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet,
         nullptr);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrAccessControl, access);
 
-    CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
+    CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID,
+                         kSecAttrTokenIDSecureEnclave);
 #endif
 
     CFErrorRef error = nullptr;
@@ -103,7 +115,8 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error);
+    auto_release publicKeyData =
+        SecKeyCopyExternalRepresentation(publicKey, &error);
     if (!publicKeyData) {
         rejectWithCFError(deferred, error, "SecKeyCopyExternalRepresentation");
         return deferred.Promise();
@@ -116,7 +129,7 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo& info) {
     return deferred.Promise();
 }
 
-Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise findKeyPair(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     auto deferred = Napi::Promise::Deferred::New(env);
@@ -125,14 +138,15 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
+    auto_release queryAttributes =
+        getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
         return deferred.Promise();
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes,
-        reinterpret_cast<CFTypeRef*>(&privateKey));
+    auto status = SecItemCopyMatching(
+        queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
 
     if (status == errSecItemNotFound) {
         deferred.Resolve(env.Null());
@@ -149,7 +163,8 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
     }
 
     CFErrorRef error = nullptr;
-    auto_release publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error);
+    auto_release publicKeyData =
+        SecKeyCopyExternalRepresentation(publicKey, &error);
     if (!publicKeyData) {
         rejectWithCFError(deferred, error, "SecKeyCopyExternalRepresentation");
         return deferred.Promise();
@@ -162,7 +177,7 @@ Napi::Promise findKeyPair(const Napi::CallbackInfo& info) {
     return deferred.Promise();
 }
 
-Napi::Promise deleteKeyPair(const Napi::CallbackInfo& info) {
+Napi::Promise deleteKeyPair(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     auto deferred = Napi::Promise::Deferred::New(env);
@@ -171,7 +186,8 @@ Napi::Promise deleteKeyPair(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
+    auto_release queryAttributes =
+        getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
         return deferred.Promise();
     }
@@ -187,7 +203,8 @@ Napi::Promise deleteKeyPair(const Napi::CallbackInfo& info) {
     }
 
 #ifdef NODE_SECURE_ENCLAVE_BUILD_FOR_TESTING_WITH_REGULAR_KEYCHAIN
-    CFDictionarySetValue(queryAttributes, kSecAttrKeyClass, kSecAttrKeyClassPublic);
+    CFDictionarySetValue(queryAttributes, kSecAttrKeyClass,
+                         kSecAttrKeyClassPublic);
     SecItemDelete(queryAttributes);
 #endif
 
@@ -195,7 +212,7 @@ Napi::Promise deleteKeyPair(const Napi::CallbackInfo& info) {
     return deferred.Promise();
 }
 
-Napi::Promise encryptData(const Napi::CallbackInfo& info) {
+Napi::Promise encryptData(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     auto deferred = Napi::Promise::Deferred::New(env);
@@ -204,7 +221,8 @@ Napi::Promise encryptData(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto_release queryAttributes = getKeyQueryAttributesFromArgs(info, deferred);
+    auto_release queryAttributes =
+        getKeyQueryAttributesFromArgs(info, deferred);
     if (!queryAttributes) {
         return deferred.Promise();
     }
@@ -215,8 +233,8 @@ Napi::Promise encryptData(const Napi::CallbackInfo& info) {
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes,
-        reinterpret_cast<CFTypeRef*>(&privateKey));
+    auto status = SecItemCopyMatching(
+        queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
@@ -229,7 +247,8 @@ Napi::Promise encryptData(const Napi::CallbackInfo& info) {
         return deferred.Promise();
     }
 
-    auto supported = SecKeyIsAlgorithmSupported(publicKey, kSecKeyOperationTypeEncrypt,
+    auto supported = SecKeyIsAlgorithmSupported(
+        publicKey, kSecKeyOperationTypeEncrypt,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
         rejectWithMessage(deferred, "Algorithm not supported");
@@ -237,7 +256,8 @@ Napi::Promise encryptData(const Napi::CallbackInfo& info) {
     }
 
     CFErrorRef error = nullptr;
-    auto_release encryptedData = SecKeyCreateEncryptedData(publicKey,
+    auto_release encryptedData = SecKeyCreateEncryptedData(
+        publicKey,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         decryptedData, &error);
     if (error) {
@@ -249,7 +269,7 @@ Napi::Promise encryptData(const Napi::CallbackInfo& info) {
     return deferred.Promise();
 }
 
-Napi::Promise decryptData(const Napi::CallbackInfo& info) {
+Napi::Promise decryptData(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     auto deferred = Napi::Promise::Deferred::New(env);
@@ -277,7 +297,7 @@ Napi::Promise decryptData(const Napi::CallbackInfo& info) {
 
     auto promise = deferred.Promise();
 
-    auto decryptContext = new DecryptContext {
+    auto decryptContext = new DecryptContext{
         .deferred = std::move(deferred),
         .queryAttributes = queryAttributes,
         .encryptedData = encryptedData,
@@ -291,8 +311,8 @@ Napi::Promise decryptData(const Napi::CallbackInfo& info) {
     return promise;
 }
 
-void resumeDecryptWithAuthentication(void* callbackData, long authErrorCode) {
-    auto decryptContext = reinterpret_cast<DecryptContext*>(callbackData);
+void resumeDecryptWithAuthentication(void *callbackData, long authErrorCode) {
+    auto decryptContext = reinterpret_cast<DecryptContext *>(callbackData);
 
     decryptContext->authErrorCode = authErrorCode;
 
@@ -300,10 +320,8 @@ void resumeDecryptWithAuthentication(void* callbackData, long authErrorCode) {
     decryptContext->tsfn.Release();
 }
 
-void decryptFinalizeCallback(Napi::Env env,
-                             Napi::Function,
-                             DecryptContext* decryptContext,
-                             void*) {
+void decryptFinalizeCallback(Napi::Env env, Napi::Function,
+                             DecryptContext *decryptContext, void *) {
     auto deferred = std::move(decryptContext->deferred);
 
     auto authErrorCode = decryptContext->authErrorCode;
@@ -314,7 +332,8 @@ void decryptFinalizeCallback(Napi::Env env,
     delete decryptContext;
 
     if (authErrorCode) {
-        auto err = Napi::Error::New(env, "User refused to authenticate with Touch ID");
+        auto err =
+            Napi::Error::New(env, "User refused to authenticate with Touch ID");
         err.Set("rejected", Napi::Boolean::New(env, true));
         err.Set("code", Napi::Number::New(env, authErrorCode));
         deferred.Reject(err.Value());
@@ -322,15 +341,16 @@ void decryptFinalizeCallback(Napi::Env env,
     }
 
     auto_release<SecKeyRef> privateKey = nullptr;
-    auto status = SecItemCopyMatching(queryAttributes,
-        reinterpret_cast<CFTypeRef*>(&privateKey));
+    auto status = SecItemCopyMatching(
+        queryAttributes, reinterpret_cast<CFTypeRef *>(&privateKey));
 
     if (status != errSecSuccess) {
         rejectWithErrorCode(deferred, status, "SecItemCopyMatching");
         return;
     }
 
-    auto supported = SecKeyIsAlgorithmSupported(privateKey, kSecKeyOperationTypeDecrypt,
+    auto supported = SecKeyIsAlgorithmSupported(
+        privateKey, kSecKeyOperationTypeDecrypt,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM);
     if (!supported) {
         rejectWithMessage(deferred, "Algorithm not supported");
@@ -338,7 +358,8 @@ void decryptFinalizeCallback(Napi::Env env,
     }
 
     CFErrorRef error = nullptr;
-    auto_release decryptedData = SecKeyCreateDecryptedData(privateKey,
+    auto_release decryptedData = SecKeyCreateDecryptedData(
+        privateKey,
         kSecKeyAlgorithmECIESEncryptionCofactorVariableIVX963SHA256AESGCM,
         encryptedData, &error);
     if (error) {
@@ -351,7 +372,8 @@ void decryptFinalizeCallback(Napi::Env env,
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
-    exports.DefineProperty(Napi::PropertyDescriptor::Accessor<isSupported>("isSupported", napi_enumerable));
+    exports.DefineProperty(Napi::PropertyDescriptor::Accessor<isSupported>(
+        "isSupported", napi_enumerable));
 
     exports.Set("createKeyPair", Napi::Function::New(env, createKeyPair));
     exports.Set("findKeyPair", Napi::Function::New(env, findKeyPair));
