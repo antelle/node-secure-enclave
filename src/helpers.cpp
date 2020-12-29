@@ -1,6 +1,8 @@
 #include "helpers.h"
-#include "auto_release.h"
+
 #include <Security/Security.h>
+
+#include "auto_release.h"
 
 void rejectAsTypeError(Napi::Promise::Deferred &deferred, const std::string &message) {
     auto env = deferred.Env();

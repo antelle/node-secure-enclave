@@ -1,7 +1,8 @@
-#include "auto_release.h"
-#include "helpers.h"
 #include <Security/Security.h>
 #include <napi.h>
+
+#include "auto_release.h"
+#include "helpers.h"
 
 constexpr int KEY_SIZE_IN_BITS = 256;
 

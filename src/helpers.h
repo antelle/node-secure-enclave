@@ -2,6 +2,7 @@
 
 #include <Security/Security.h>
 #include <napi.h>
+
 #include <string>
 
 bool isBiometricAuthSupported();
