@@ -30,7 +30,9 @@
 
     "format": "npm run prettier && npm run clang-format",
     "clang-format": "clang-format -i src/*",
-    "prettier": "prettier --write test/*.js test-app/*.{js,css,html} *.ts"
+    "prettier": "prettier --write test/*.js test-app/*.{js,css,html} *.ts",
+
+    "bump": "node -e 'const v = fs.readFileSync(`release-notes.md`, `utf8`).match(/[\\d\\.]+/)[0]; for (const f of [`package.json`, `package-lock.json`, `test-app/package.json`]) { fs.writeFileSync(f+1, fs.readFileSync(f, `utf8`).replace(/\"version\":.*?,/, `\"version\": \"${v}\"`)); }'"
   },
   "author": "Antelle",
   "license": "MIT",

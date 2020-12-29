@@ -2,6 +2,7 @@ Release notes
 -------------
 ##### v0.3.0 (2020-12-28)
 `*` Promise API  
+`+` possibility to set a custom Touch ID prompt  
 
 ##### v0.2.1 (2020-12-28)
 `*` changed the encryption algorithm to ECIESEncryptionCofactorVariableIVX963SHA256AESGCM  
