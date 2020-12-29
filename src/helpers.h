@@ -17,7 +17,8 @@ bool rejectIfNotSupported(Napi::Promise::Deferred &deferred);
 
 CFDataRef getKeyTagFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
 CFMutableDictionaryRef getKeyQueryAttributesFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
-CFDataRef getDataFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
+CFDataRef getDataFromArgsNoCopy(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
+CFDataRef getDataFromArgsAsCopy(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
 CFStringRef getTouchIdPromptFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred);
 
 Napi::Buffer<UInt8> cfDataToBuffer(Napi::Env env, CFDataRef cfData);

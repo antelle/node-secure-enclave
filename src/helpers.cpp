@@ -130,7 +130,7 @@ CFMutableDictionaryRef getKeyQueryAttributesFromArgs(const Napi::CallbackInfo &i
     return queryAttributes;
 }
 
-CFDataRef getDataFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred) {
+CFDataRef getDataFromArgsNoCopy(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred) {
     auto object = info[0].ToObject();
 
     if (!object.Has("data")) {
@@ -150,7 +150,15 @@ CFDataRef getDataFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferre
         return nullptr;
     }
 
-    return CFDataCreate(kCFAllocatorDefault, buffer.Data(), buffer.ByteLength());
+    return CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, buffer.Data(), buffer.ByteLength(), kCFAllocatorNull);
+}
+
+CFDataRef getDataFromArgsAsCopy(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred) {
+    auto_release data = getDataFromArgsNoCopy(info, deferred);
+    if (!data) {
+        return nullptr;
+    }
+    return CFDataCreateCopy(kCFAllocatorDefault, data);
 }
 
 CFStringRef getTouchIdPromptFromArgs(const Napi::CallbackInfo &info, Napi::Promise::Deferred &deferred) {

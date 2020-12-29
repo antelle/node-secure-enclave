@@ -206,7 +206,9 @@ Napi::Promise encryptData(const Napi::CallbackInfo &info) {
         return deferred.Promise();
     }
 
-    auto_release decryptedData = getDataFromArgs(info, deferred);
+    // decryptedData points to the contents of the input Buffer
+    // it's caller responsibility to clean it up, no need to do it here
+    auto_release decryptedData = getDataFromArgsNoCopy(info, deferred);
     if (!decryptedData) {
         return deferred.Promise();
     }
@@ -260,7 +262,7 @@ Napi::Promise decryptData(const Napi::CallbackInfo &info) {
     }
 
     // released in decryptFinalizeCallback
-    auto encryptedData = getDataFromArgs(info, deferred);
+    auto encryptedData = getDataFromArgsAsCopy(info, deferred);
     if (!encryptedData) {
         return deferred.Promise();
     }
@@ -337,7 +339,11 @@ void decryptFinalizeCallback(Napi::Env env, Napi::Function, DecryptContext *decr
     }
 
     deferred.Resolve(cfDataToBuffer(env, decryptedData));
-    return;
+
+    auto dataBytePtr = CFDataGetBytePtr(decryptedData);
+
+    // that's not quite correct, but meh
+    memset(const_cast<UInt8 *>(dataBytePtr), 0, CFDataGetLength(decryptedData));
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {

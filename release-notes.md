@@ -1,6 +1,9 @@
 Release notes
 -------------
-##### v0.3.0 (2020-12-28)
+##### v0.3.1 (2020-12-29)
+`+` erasing decrypted data in the library  
+
+##### v0.3.0 (2020-12-29)
 `*` Promise API  
 `+` possibility to set a custom Touch ID prompt  
 
