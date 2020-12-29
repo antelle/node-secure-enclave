@@ -65,10 +65,7 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef qu
     NSError *error = nil;
     [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
 
-    if (error && error.code == LAErrorBiometryLockout) {
-        tryAuthenticate(context, false, touchIdPrompt, queryAttributes, callbackData, false);
-    } else {
-        tryAuthenticate(context, true, touchIdPrompt, queryAttributes, callbackData, true);
-    }
+    bool useBiometrics = error && error.code == LAErrorBiometryLockout;
+    tryAuthenticate(context, useBiometrics, touchIdPrompt, queryAttributes, callbackData, useBiometrics);
 #endif
 }
