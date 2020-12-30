@@ -36,6 +36,12 @@ Development:
 - `clang-format`
 - it's strongly recommended to [lock down your Electron](#evil-electron-features)
 
+## Installation
+
+```sh
+npm i secure-enclave
+```
+
 ## API
 
 This snippet shows the basic usage:

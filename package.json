@@ -1,6 +1,6 @@
 {
   "name": "secure-enclave",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Secure Enclave module for node.js and Electron",
   "main": "build/Release/secure_enclave.node",
   "types": "node-secure-enclave.d.ts",
@@ -41,6 +41,9 @@
     "type": "git",
     "url": "git://github.com/antelle/node-secure-enclave.git"
   },
+  "dependencies": {
+    "node-addon-api": "^3.1.0"
+  },
   "devDependencies": {
     "@types/node": "^14.14.16",
     "electron": "^11.1.1",
@@ -49,7 +52,6 @@
     "electron-rebuild": "^2.3.4",
     "eslint": "^7.16.0",
     "mocha": "^8.2.1",
-    "node-addon-api": "^3.1.0",
     "node-gyp": "^7.1.2",
     "prettier": "^2.2.1",
     "typescript": "^4.1.3"
