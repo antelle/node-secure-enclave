@@ -27,7 +27,7 @@ And on your Touch Bar:
 
 Runtime:
 - macOS: Secure Enclave doesn't exist on other OS
-- limited to MacBooks with Touch Bar
+- limited to MacBooks with a Touch Bar
 
 Development:
 - the app must be codesigned
@@ -101,7 +101,7 @@ npm test
 
 Reformat all C++ and JavaScript:
 ```sh
-npm format
+npm run format
 ```
 
 ## Evil Electron features
