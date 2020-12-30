@@ -18,10 +18,11 @@ And on your Touch Bar:
 
 ## Features
 
-- no dependencies, no bloatware
-- ≈50k of native code, no javascript
 - works with Electron
 - hardware encryption, private keys don't leak
+- shows the password prompt in case of "lockout"
+- no dependencies, no bloatware
+- ≈50k of native code, no javascript
 
 ## Requirements
 
