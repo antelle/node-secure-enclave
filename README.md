@@ -63,7 +63,9 @@ if (key) {
     const data = Buffer.from('something');
     // these operations return Buffer too
     data = await SecureEnclave.encrypt({ keyTag, data });
-    data = await SecureEnclave.decrypt({ keyTag, data });
+    data = await SecureEnclave.decrypt({ keyTag, data,
+        // some human-readable text for your users
+        touchIdPrompt: 'decrypt data' });
     
     // if you don't need the key anymore
     await SecureEnclave.deleteKeyPair({ keyTag });
