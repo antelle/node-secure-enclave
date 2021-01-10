@@ -1,5 +1,11 @@
 Release notes
 -------------
+##### v0.3.5 (2021-01-10)
+`*` renamed the module to secure-enclave  
+
+##### v0.3.4 (2021-01-10)
+`*` added os limitation  
+
 ##### v0.3.3 (2020-12-30)
 `+` fixed a memory leak in errors  
 `-` fixed add-on installation  
