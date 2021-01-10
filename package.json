@@ -1,6 +1,6 @@
 {
   "name": "secure-enclave",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Secure Enclave module for node.js and Electron",
   "main": "build/Release/secure_enclave.node",
   "types": "node-secure-enclave.d.ts",
@@ -55,5 +55,8 @@
     "node-gyp": "^7.1.2",
     "prettier": "^2.2.1",
     "typescript": "^4.1.3"
-  }
+  },
+  "os": [
+    "darwin"
+  ]
 }
