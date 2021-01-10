@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "secure_enclave",
+      "target_name": "secure-enclave",
       "sources": [
         "src/addon.cpp",
         "src/auto_release.h",

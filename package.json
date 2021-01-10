@@ -2,7 +2,7 @@
   "name": "secure-enclave",
   "version": "0.3.4",
   "description": "Secure Enclave module for node.js and Electron",
-  "main": "build/Release/secure_enclave.node",
+  "main": "build/Release/secure-enclave.node",
   "types": "node-secure-enclave.d.ts",
   "scripts": {
     "start": "npm run clean && npm run build-electron && npm run package-test-app && npm run copy-addon-to-test-app && npm run sign-test-app && npm run test-app",
