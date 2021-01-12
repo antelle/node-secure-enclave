@@ -1,5 +1,8 @@
 Release notes
 -------------
+##### v0.3.6 (2021-01-12)
+`-` removed the "Use Password" button  
+
 ##### v0.3.5 (2021-01-10)
 `*` renamed the module to secure-enclave  
 

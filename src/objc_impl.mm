@@ -27,6 +27,7 @@ void tryAuthenticate(LAContext *context, bool useBiometrics, CFStringRef touchId
     CFRetain(touchIdPrompt);
     LAPolicy policy =
         useBiometrics ? LAPolicyDeviceOwnerAuthenticationWithBiometrics : LAPolicyDeviceOwnerAuthentication;
+    context.localizedFallbackTitle = @"";
     [context evaluatePolicy:policy
             localizedReason:(NSString *)touchIdPrompt
                       reply:^(BOOL success, NSError *_Nullable error) {
