@@ -80,9 +80,12 @@ Napi::Promise createKeyPair(const Napi::CallbackInfo &info) {
 
     CFDictionaryAddValue(creteKeyAttributes, kSecPublicKeyAttrs, publicKeyAttrs);
 #else
+    auto accessControl = kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet;
+    if (__builtin_available(macOS 10.15, *)) {
+        accessControl |= (kSecAccessControlOr | kSecAccessControlWatch);
+    }
     auto_release access = SecAccessControlCreateWithFlags(
-        kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        kSecAccessControlPrivateKeyUsage | kSecAccessControlBiometryCurrentSet, nullptr);
+        kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, accessControl, nullptr);
     CFDictionaryAddValue(privateKeyAttrs, kSecAttrAccessControl, access);
 
     CFDictionaryAddValue(creteKeyAttributes, kSecAttrTokenID, kSecAttrTokenIDSecureEnclave);
