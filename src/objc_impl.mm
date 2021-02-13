@@ -10,7 +10,11 @@ bool isBiometricAuthSupported() {
     }
     LAContext *context = [[LAContext alloc] init];
     NSError *error = nil;
-    supported = [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+    LAPolicy policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+    if (@available(macOS 10.15, *)) {
+        policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+    }
+    supported = [context canEvaluatePolicy:policy error:&error];
     if (!supported && context.biometryType == LABiometryTypeTouchID && error && error.code == LAErrorBiometryLockout) {
         supported = true;
     }
@@ -25,8 +29,14 @@ bool isBiometricAuthSupported() {
 void tryAuthenticate(LAContext *context, bool useBiometrics, CFStringRef touchIdPrompt,
                      CFMutableDictionaryRef queryAttributes, void *callbackData, bool retryOnLockout) {
     CFRetain(touchIdPrompt);
-    LAPolicy policy =
-        useBiometrics ? LAPolicyDeviceOwnerAuthenticationWithBiometrics : LAPolicyDeviceOwnerAuthentication;
+    LAPolicy policy = LAPolicyDeviceOwnerAuthentication;
+    if (useBiometrics) {
+        if (@available(macOS 10.15, *)) {
+            policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+        } else {
+            policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+        }
+    }
     context.localizedFallbackTitle = @"";
     [context evaluatePolicy:policy
             localizedReason:(NSString *)touchIdPrompt
@@ -64,7 +74,11 @@ void authenticateAndDecrypt(CFStringRef touchIdPrompt, CFMutableDictionaryRef qu
     [context release];
 
     NSError *error = nil;
-    [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error];
+    LAPolicy policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+    if (@available(macOS 10.15, *)) {
+        policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+    }
+    [context canEvaluatePolicy:policy error:&error];
 
     bool useBiometrics = error && error.code == LAErrorBiometryLockout;
     tryAuthenticate(context, useBiometrics, touchIdPrompt, queryAttributes, callbackData, useBiometrics);
