@@ -78,7 +78,7 @@ describe('node-secure-enclave', function () {
             assert.notStrictEqual(newKey.publicKey.toString('hex'), key.publicKey.toString('hex'));
         });
 
-        it('throws an error for a non-existing key', async () => {
+        it('returns false for a non-existing key', async () => {
             const deleted = await nodeSecureEnclave().deleteKeyPair({ keyTag });
             assert.strictEqual(deleted, false);
         });
